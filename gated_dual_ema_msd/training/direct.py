@@ -6,6 +6,8 @@ evaluation only through an explicit frozen-final switch in the calling CLI.
 """
 from __future__ import annotations
 
+from gated_dual_ema_msd.training.precision import bf16_enabled
+
 import json
 import math
 import os
@@ -389,7 +391,7 @@ class DirectTrainer:
         use_ema: bool = True,
         ema_decay: float = 0.992,
         ema_start_step: int = 100,
-        fp16: bool = True,
+        bf16: bool = True,
         evaluate_test: bool = False,
         use_wandb: bool = False,
         wandb_project: str = "gated-dual-ema-msd",
@@ -426,7 +428,7 @@ class DirectTrainer:
         self.eval_steps = int(eval_steps)
         self.patience = int(patience)
         self.max_grad_norm = float(max_grad_norm)
-        self.fp16 = bool(fp16 and self.device.type == "cuda")
+        self.bf16 = bf16_enabled(self.device, requested=bf16)
         self.evaluate_test = bool(evaluate_test)
         self.use_ema = bool(use_ema)
         self.ema_decay = float(ema_decay)
@@ -511,7 +513,9 @@ class DirectTrainer:
             "eval_steps": self.eval_steps,
             "patience": self.patience,
             "seed": self.seed,
-            "fp16_train": self.fp16,
+            "bf16_train": self.bf16,
+            "fp16_train": False,
+            "train_precision": "bf16" if self.bf16 else "fp32",
             "fp32_eval": True,
             "use_ema": self.use_ema,
             "ema_decay": self.ema_decay,
@@ -572,8 +576,7 @@ class DirectTrainer:
             num_warmup_steps=int(total_steps * self.warmup_ratio),
             num_training_steps=total_steps,
         )
-        device_type = "cuda" if torch.cuda.is_available() else "cpu"
-        scaler = torch.amp.GradScaler(device_type, enabled=self.fp16)
+        scaler = torch.amp.GradScaler(self.device.type, enabled=False)
 
         best_path = self.output_dir / "best_model.pt"
         best_current_path = self.output_dir / "best_current_model.pt"
@@ -591,6 +594,7 @@ class DirectTrainer:
         header = (
             f"[{run_name}] STARTED | dataset={self.dataset} seed={self.seed} "
             f"max_length={self.max_length} steps={total_steps} "
+            f"train_precision={'bf16' if self.bf16 else 'fp32'} eval_precision=fp32 "
             f"EMA={self.use_ema} MSD={msd_info['msd_enabled']} "
             f"test_access={bool(test_rows)}"
         )
@@ -609,8 +613,8 @@ class DirectTrainer:
                 }
                 with torch.autocast(
                     device_type=self.device.type,
-                    enabled=self.fp16,
-                    dtype=torch.float16,
+                    enabled=self.bf16,
+                    dtype=torch.bfloat16,
                 ):
                     output = self.model(**batch)
                     loss = output["loss"]

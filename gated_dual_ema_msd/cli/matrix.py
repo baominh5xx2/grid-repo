@@ -35,6 +35,7 @@ from gated_dual_ema_msd.experiment_registry import (
 from gated_dual_ema_msd.models import create_nli_model
 from gated_dual_ema_msd.trainer import DirectTrainer
 from gated_dual_ema_msd.training.runtime import prepare_model
+from gated_dual_ema_msd.training.precision import bf16_enabled
 
 
 PACKAGE_DIR = pathlib.Path(__file__).resolve().parents[1]
@@ -255,6 +256,7 @@ def run_jobs_in_process(
     rerun: bool,
 ) -> None:
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    bf16_enabled(device)
     cached_data: Dict[str, Any] = {}
     cached_tokenizers: Dict[str, Any] = {}
 

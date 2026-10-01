@@ -21,6 +21,7 @@ from gated_dual_ema_msd.evaluation.inference import run_inference
 from gated_dual_ema_msd.compatibility.root_models.flat_cafebert import FlatCafeBERT
 from gated_dual_ema_msd.training.lora import apply_lora_to_model, assert_lora_eval_noop
 from gated_dual_ema_msd.training.train_exp001 import save_predictions
+from gated_dual_ema_msd.training.precision import bf16_enabled
 from gated_dual_ema_msd.utils import hf_hub_helper, wandb_helper
 from gated_dual_ema_msd.config.r2_validation import (
     ROOT,
@@ -68,6 +69,7 @@ def main(args) -> dict:
     cfg_path = pathlib.Path(args.config)
     cfg = yaml.safe_load(cfg_path.read_text(encoding="utf-8"))
     validate_config(cfg)
+    bf16_enabled(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     tiny_model = getattr(args, "tiny_model", None)
     wandb_enabled = (
         not args.debug

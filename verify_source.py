@@ -109,7 +109,7 @@ def main():
                 device=torch.device("cpu"), output_dir=pathlib.Path(temporary),
                 dataset="vianli", max_length=512, max_epochs=1,
                 physical_batch_size=2, gradient_accumulation_steps=2,
-                eval_steps=1, patience=3, fp16=False, use_ema=True,
+                eval_steps=1, patience=3, bf16=False, use_ema=True,
                 ema_start_step=1, evaluate_test=False, use_wandb=False, use_hf=False)
             result = trainer.train(rows("train",8), rows("dev",3), run_name="synthetic-source-check")
             assert result["test"] is None

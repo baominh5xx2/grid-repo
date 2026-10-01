@@ -7,6 +7,7 @@ import os
 import pathlib
 import time
 from dataclasses import dataclass
+from collections import Counter
 from typing import Any
 
 import numpy as np
@@ -42,6 +43,7 @@ from gated_dual_ema_msd.config.r2_validation import (
     LAURER_MTVI_DOMAIN,
 )
 from gated_dual_ema_msd.training.checkpoints import save_checkpoint
+from gated_dual_ema_msd.training.precision import bf16_enabled
 
 @dataclass(frozen=True)
 class StageResult:
@@ -220,10 +222,17 @@ def train_stage(model, train_sets: dict[str, Any], dev_rows: list[dict], tokeniz
         int(total_optimizer_steps * training["warmup_ratio"]),
         total_optimizer_steps,
     )
-    use_fp16 = device.type == "cuda" and training["fp16_train"]
-    scaler = torch.amp.GradScaler(device.type, enabled=use_fp16)
+    use_bf16 = bf16_enabled(device, requested=training["bf16_train"])
+    scaler = torch.amp.GradScaler(device.type, enabled=False)
+    print(f"[{stage_name}] train_precision={'bf16' if use_bf16 else 'fp32'} eval_precision=fp32", flush=True)
+    wandb_helper.log_step(run, {
+        f"{stage_name}/train_precision": "bf16" if use_bf16 else "fp32",
+        f"{stage_name}/bf16_train": use_bf16,
+        f"{stage_name}/fp16_train": False,
+        f"{stage_name}/fp32_eval": True,
+    }, step=wandb_step_offset)
     sam_second_scaler = (
-        torch.amp.GradScaler(device.type, enabled=use_fp16)
+        torch.amp.GradScaler(device.type, enabled=False)
         if sam_params is not None else None
     )
     best_metric, best_eval_step, no_improve, optimizer_step = -1.0, -1, 0, 0
@@ -369,7 +378,7 @@ def train_stage(model, train_sets: dict[str, Any], dev_rows: list[dict], tokeniz
         print(f"[{stage_name}] FreeLB active: {freelb_params} (every step)", flush=True)
     if sam_params is not None:
         print(f"[{stage_name}] SAM active: rho={sam_params['rho']} "
-              "(two-pass, AMP with independent GradScalers)", flush=True)
+              "(two-pass, BF16 with loss scaling disabled)", flush=True)
     child_tune_p = cfg["model"].get("childtune_p")
     if child_tune_p is not None:
         print(f"[{stage_name}] Child-Tuning-F active: p_F={child_tune_p} "
@@ -464,7 +473,7 @@ def train_stage(model, train_sets: dict[str, Any], dev_rows: list[dict], tokeniz
                 key: value.to(device) for key, value in batch.items()
                 if key in ("input_ids", "attention_mask", "token_type_ids", "labels")
             }
-            with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=use_fp16):
+            with torch.autocast(device_type=device.type, dtype=torch.bfloat16, enabled=use_bf16):
                 if freelb_params is not None:
                     # FreeLB (arXiv:1909.11764): K adversarial passes on the word
                     # embedding output, gradients accumulated across passes, ONE
@@ -629,7 +638,7 @@ def train_stage(model, train_sets: dict[str, Any], dev_rows: list[dict], tokeniz
                 torch.nn.utils.clip_grad_norm_(model.parameters(), training["max_grad_norm"])
                 optimizer.first_step(zero_grad=True)
                 with torch.autocast(
-                    device_type=device.type, dtype=torch.float16, enabled=use_fp16
+                    device_type=device.type, dtype=torch.bfloat16, enabled=use_bf16
                 ):
                     for window_rows in sam_window:
                         window_batch = collate_rows(

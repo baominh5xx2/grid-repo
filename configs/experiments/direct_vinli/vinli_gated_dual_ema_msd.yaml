@@ -22,7 +22,8 @@ training:
   physical_batch_size: 4
   gradient_accumulation_steps: 4
   effective_batch_size: 16
-  fp16_train: true
+  bf16_train: true
+  fp16_train: false
   fp32_eval: true
   learning_rate: 1.0e-05
   weight_decay: 0.005

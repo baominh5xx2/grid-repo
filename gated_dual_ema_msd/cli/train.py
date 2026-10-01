@@ -21,6 +21,7 @@ from gated_dual_ema_msd.experiment_registry import (
 from gated_dual_ema_msd.models import create_nli_model
 from gated_dual_ema_msd.trainer import DirectTrainer, msd_metadata, parameter_counts
 from gated_dual_ema_msd.training.runtime import prepare_model, set_seed
+from gated_dual_ema_msd.training.precision import bf16_enabled
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -97,6 +98,10 @@ def main(argv: Sequence[str] | None = None) -> None:
         )
 
     max_length = DATASET_MAX_LENGTHS[args.dataset]
+    if args.require_cuda and not torch.cuda.is_available():
+        raise RuntimeError("This matrix job requires CUDA, but no CUDA device is available")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    use_bf16 = bf16_enabled(device)
     allow_test = allow_final_test(frozen_final=args.frozen_final, no_test=args.no_test)
     data, tokenizer = load_nli_dataset(
         args.dataset,
@@ -129,6 +134,8 @@ def main(argv: Sequence[str] | None = None) -> None:
             "run_name": run_name,
             "dataset": args.dataset,
             "max_length": max_length,
+            "train_precision": "bf16" if use_bf16 else "fp32",
+            "eval_precision": "fp32",
             "experiment": experiment.to_dict(),
             "parameters": parameter_counts(model),
             "msd": msd_metadata(model),
@@ -137,9 +144,6 @@ def main(argv: Sequence[str] | None = None) -> None:
         print(json.dumps(report, indent=2, ensure_ascii=False))
         return
 
-    if args.require_cuda and not torch.cuda.is_available():
-        raise RuntimeError("This matrix job requires CUDA, but no CUDA device is available")
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     trainer = DirectTrainer(
         model=model,
         tokenizer=tokenizer,

@@ -551,8 +551,10 @@ def validate_config(cfg: dict) -> None:
     if (training.get("physical_batch_size"), training.get("gradient_accumulation_steps"),
             training.get("effective_batch_size")) != (4, 4, 16):
         raise ValueError("batch contract must be physical=4, grad_accum=4, effective=16")
-    if training.get("fp16_train") is not True or training.get("fp32_eval") is not True:
-        raise ValueError("precision contract must be FP16 train and FP32 eval")
+    if (training.get("bf16_train") is not True
+            or training.get("fp16_train", False) is not False
+            or training.get("fp32_eval") is not True):
+        raise ValueError("precision contract must be BF16 train and FP32 eval (FP16 disabled)")
     if gated_mode:
         wd_map = {
             "exp-001-r2-m15-gated-small256-maxlen512-seed42": 0.01,

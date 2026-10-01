@@ -29,6 +29,7 @@ from gated_dual_ema_msd.evaluation.inference import run_inference
 from gated_dual_ema_msd.evaluation.metrics import compute_metrics
 from gated_dual_ema_msd.compatibility.root_models.flat_cafebert import FlatCafeBERT
 from gated_dual_ema_msd.utils import hf_hub_helper, wandb_helper
+from gated_dual_ema_msd.training.precision import bf16_enabled
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
@@ -295,8 +296,8 @@ def train_target(model, target_train: list[dict], target_dev: list[dict], tokeni
     scheduler = get_linear_schedule_with_warmup(
         optimizer, int(total_optimizer_steps * tr["warmup_ratio"]), total_optimizer_steps
     )
-    fp16 = device.type == "cuda" and tr.get("fp16", False)
-    scaler = torch.amp.GradScaler(device.type, enabled=fp16)
+    bf16 = bf16_enabled(device, requested=tr.get("bf16_train", tr.get("bf16", True)))
+    scaler = torch.amp.GradScaler(device.type, enabled=False)
     best_metric, no_improve, global_step = -1.0, 0, 0
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
@@ -332,7 +333,7 @@ def train_target(model, target_train: list[dict], target_dev: list[dict], tokeni
         for batch_idx, raw_rows in enumerate(tqdm(mixer.batches(), total=steps_per_epoch, desc=f"stage2 epoch {epoch}"), 1):
             batch = collate_rows(raw_rows, tokenizer, cfg["model"]["max_length"])
             tensors = {k: v.to(device) for k, v in batch.items() if k in ("input_ids", "attention_mask", "token_type_ids", "labels")}
-            with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=fp16):
+            with torch.autocast(device_type=device.type, dtype=torch.bfloat16, enabled=bf16):
                 output = model(
                     input_ids=tensors["input_ids"], attention_mask=tensors["attention_mask"],
                     token_type_ids=tensors.get("token_type_ids"), labels=tensors["labels"],

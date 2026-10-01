@@ -19,7 +19,7 @@ Paper-exact, single-variable loss add-ons on top of the M20 gated baseline
 Both helpers factor the loss math into standalone functions so they can be
 sanity-tested with random logits/embeddings on CPU. Consistency terms are
 always computed in FP32 (logits cast to float32, every KL inside
-``torch.autocast(device_type=..., enabled=False)``) so FP16 training can never
+``torch.autocast(device_type=..., enabled=False)``) so BF16 training can never
 contaminate them. CE keeps label smoothing via CrossEntropyLoss (0.02).
 """
 from __future__ import annotations
@@ -94,7 +94,7 @@ def mirror_contradiction_symmetry_loss(
     The original ordered pair alone receives supervised CE. The reversed pair is
     deliberately unlabeled: the only constraint is contradiction symmetry,
     ``abs(log p_C(P,H) - log p_C(H,P))``. All log probabilities are FP32 so the
-    auxiliary term remains stable under the runner's FP16 autocast.
+    auxiliary term remains stable under the runner's BF16 autocast.
     """
     if logits.ndim != 2 or mirrored_logits.shape != logits.shape or logits.size(1) != 3:
         raise ValueError("mirror symmetry expects two matching [batch, 3] logit tensors")

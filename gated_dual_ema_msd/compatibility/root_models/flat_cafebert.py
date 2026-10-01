@@ -483,7 +483,7 @@ class FlatCafeBERT(nn.Module):
     ) -> torch.Tensor:
         premise_mask, hypothesis_mask = self._segment_masks(input_ids, attention_mask)
         projected = self.alignment_projection(hidden)
-        # Similarity and softmax stay in FP32 even under FP16 training; this is
+        # Similarity and softmax stay in FP32 even under BF16 training; this is
         # the only O(L^2) operation and avoids overflow on sharp token scores.
         with torch.autocast(device_type=hidden.device.type, enabled=False):
             projected_for_alignment = projected.float()

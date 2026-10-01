@@ -31,10 +31,24 @@ python -m gated_dual_ema_msd.cli.train --dataset vianli --experiment_id M3_FULL 
 ```
 
 Dataset sequence limits: **ViNLI=512, ViANLI=512, ViMedNLI=256**.
+Training defaults to **BF16 autocast on supported CUDA GPUs**, with loss scaling
+disabled; evaluation stays **FP32**. Unsupported CUDA GPUs fail before model/data
+loading. Local CPU verification uses FP32.
 The direct CLI locks test by default. Use `--frozen_final` only for an explicitly
 approved final evaluation. The supplied R2 config is the separately approved
 end-to-end protocol; it includes final test inference and requires prepared data
 and provenance manifests.
+
+Run the eleven registered configurations on all three datasets with seed 42:
+
+```sh
+python -m gated_dual_ema_msd.cli.matrix --cohort seed42 --datasets vinli vianli vimednli --output_dir outputs/bf16_seed42 --parallel_jobs 1
+```
+
+This command selects checkpoints on dev and keeps test locked. Increase
+`--parallel_jobs` only when GPU memory can fit multiple independent runs.
+Use a fresh output directory when comparing with previous FP16 runs; completed
+results in an existing directory are skipped unless `--rerun` is supplied.
 
 ## Source layout
 
@@ -61,9 +75,13 @@ forwarding. Model/training arithmetic is retained from the existing source.
 
 ```sh
 python verify_source.py
+python -m unittest discover -s tests
 ```
 
 This check parses the source, verifies imports/sequence limits/test defaults, runs
 all eleven architectures against a tiny synthetic CPU backbone, and exercises
 direct training/checkpoint reload with synthetic train/dev records. It does not
 download a model, access benchmark test data, or publish artifacts.
+Precision regression tests additionally run actual BF16 forward/backward for all
+eleven architectures and a synthetic BF16 trainer loop on CPU, check FP32
+evaluation and disabled loss scaling, and mock the CUDA capability checks.

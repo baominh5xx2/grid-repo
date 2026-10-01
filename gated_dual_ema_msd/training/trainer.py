@@ -12,6 +12,7 @@ from gated_dual_ema_msd.data.datamodule import NLIDataModule
 from gated_dual_ema_msd.evaluation.evaluator import NLIEvaluator
 from gated_dual_ema_msd.training.callbacks import BaseCallback
 from gated_dual_ema_msd.training.ema_context import ema_weights
+from gated_dual_ema_msd.training.precision import bf16_enabled
 
 
 class BaseTrainer:
@@ -29,7 +30,7 @@ class BaseTrainer:
         scheduler: Optional[Any] = None,
         callbacks: Optional[List[BaseCallback]] = None,
         device: Optional[torch.device] = None,
-        fp16: bool = True,
+        bf16: bool = True,
         grad_accum_steps: int = 4,
         max_epochs: int = 5,
         eval_every_steps: Optional[int] = None,
@@ -43,16 +44,13 @@ class BaseTrainer:
         self.device = device or (
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         )
-        self.fp16 = fp16 and torch.cuda.is_available()
+        self.bf16 = bf16_enabled(self.device, requested=bf16)
         self.grad_accum_steps = grad_accum_steps
         self.max_epochs = max_epochs
         self.eval_every_steps = eval_every_steps
         self.max_grad_norm = max_grad_norm
 
-        if hasattr(torch, "amp") and hasattr(torch.amp, "GradScaler"):
-            self.scaler = torch.amp.GradScaler("cuda", enabled=self.fp16)
-        else:
-            self.scaler = torch.cuda.amp.GradScaler(enabled=self.fp16)
+        self.scaler = torch.amp.GradScaler(self.device.type, enabled=False)
         self.evaluator = NLIEvaluator(model=self.model, device=self.device)
 
         # State attributes
@@ -72,10 +70,8 @@ class BaseTrainer:
         if labels is not None:
             labels = labels.to(self.device)
 
-        autocast_ctx = (
-            torch.amp.autocast("cuda", enabled=self.fp16)
-            if hasattr(torch, "amp") and hasattr(torch.amp, "autocast")
-            else torch.cuda.amp.autocast(enabled=self.fp16)
+        autocast_ctx = torch.autocast(
+            self.device.type, dtype=torch.bfloat16, enabled=self.bf16
         )
 
         with autocast_ctx:
