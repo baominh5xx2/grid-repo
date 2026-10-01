@@ -1,0 +1,50 @@
+project:
+  experiment_id: EXP-001-VMED-WINNING-SOTA
+  experiment_name: exp001-direct-vimednli-winning-sota
+  method_name: Gated-Dual CafeBERT + Multi-Sample Dropout + Parameter EMA (Winning
+    SOTA)
+  seed: 42
+  target_test_locked: false
+model:
+  name: uitnlp/CafeBERT
+  revision: af76fcf2a04096b2b54b348a3e4eb48253c93c5d
+  max_length: 256
+  dropout: 0.1
+  label_smoothing: 0.02
+  pool_mode: gated_dual
+  segment_pooling: attentive
+  relation_hidden: 128
+  gate_bias: -1.0
+data:
+  vimednli_dir: data/external/vimednli
+  max_lengths:
+    vimednli: 256
+training:
+  physical_batch_size: 4
+  gradient_accumulation_steps: 4
+  effective_batch_size: 16
+  fp16_train: true
+  fp32_eval: true
+  learning_rate: 1.0e-05
+  weight_decay: 0.005
+  warmup_ratio: 0.06
+  max_grad_norm: 1.0
+  max_epochs: 7
+  eval_optimizer_steps: 50
+  early_stopping_patience_evals: 4
+experiments:
+- id: vmed_winning_sota
+  description: 'ViMedNLI Winning SOTA: EMA 0.995 @ step 50 + MSD 5-path + LR 1.0e-5
+    (Max Length 256)'
+  use_ema: true
+  ema_decay: 0.995
+  ema_start_step: 50
+  use_multi_sample_dropout: true
+  msd_dropouts:
+  - 0.1
+  - 0.2
+  - 0.3
+  - 0.4
+  - 0.5
+  learning_rate: 1.0e-05
+  warmup_ratio: 0.06

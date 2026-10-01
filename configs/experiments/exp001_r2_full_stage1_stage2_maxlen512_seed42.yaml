@@ -1,0 +1,101 @@
+project:
+  experiment_id: EXP-001-R2
+  experiment_name: exp-001-r2-full-stage1-stage2-maxlen512-seed42
+  experiment_type: full_stilts_transfer
+  experiment_mode: fresh_vinli_then_vianli_no_replay
+  seed: 42
+  target_test_locked: false
+
+model:
+  name: uitnlp/CafeBERT
+  revision: af76fcf2a04096b2b54b348a3e4eb48253c93c5d
+  max_length: 512
+  dropout: 0.1
+  label_smoothing: 0.0
+  fallback_models: []
+
+data:
+  vinli_dir: data/external/vinli
+  vianli_dir: data/processed/vianli_clean
+  manifests:
+    vinli: data/external/vinli/manifest.json
+    vianli: data/processed/vianli_clean/manifest.json
+  revisions:
+    vinli: 47bd78ac5d075bd00a3cb4cdd3ede4eec4acf8c2
+    vianli: 0fec8d6ecb043a61c609f9b51f80401fdf1e84d3
+  expected_counts:
+    vinli_train: 18282
+    vinli_dev: 2255
+    vianli_train: 8010
+    vianli_dev: 1000
+    vianli_test: 1000
+
+training:
+  physical_batch_size: 4
+  gradient_accumulation_steps: 4
+  effective_batch_size: 16
+  fp16_train: true
+  fp32_eval: true
+  weight_decay: 0.0
+  warmup_ratio: 0.06
+  max_grad_norm: 1.0
+  logging_steps: 50
+  stage1:
+    dataset: vinli
+    train_split: vinli_train
+    selection_split: vinli_dev
+    selection_metric: macro_f1
+    learning_rate: 1.0e-5
+    max_epochs: 5
+    eval_optimizer_steps: 400
+    early_stopping_patience_evals: 3
+    batch_mix:
+      vinli: 4
+  stage2:
+    dataset: vianli
+    train_split: vianli_train
+    selection_split: vianli_dev
+    selection_metric: macro_f1
+    learning_rate: 1.0e-5
+    max_epochs: 7
+    eval_optimizer_steps: 400
+    early_stopping_patience_evals: 3
+    replay: false
+    batch_mix:
+      vianli: 4
+
+debug:
+  max_train_rows_per_stage: 16
+  max_dev_rows_per_stage: 8
+  max_epochs_per_stage: 1
+  eval_optimizer_steps: 1
+
+outputs:
+  root: outputs/exp001/exp-001-r2-full-stage1-stage2-maxlen512-seed42
+
+wandb:
+  enabled: true
+  entity: trinhtrantran3105-uit
+  project: hierarchical-nli-e-first
+  run_name: exp-001-r2-full-stage1-stage2-maxlen512-seed42
+  tracking_only: true
+
+hf_hub:
+  enabled: true
+  repo_id: trinhtrantran122/vianli-exp-001-r2-full-stage1-stage2-maxlen512-seed42
+  private: false
+  required_checkpoint_dirs:
+    - stage1_best
+    - stage2_best
+  required_prediction_splits:
+    - vinli_dev
+    - vianli_dev
+    - vianli_test
+
+evaluation:
+  search_splits:
+    - vinli_dev
+    - vianli_dev
+    - vianli_test
+  target_test_enabled: true
+  method_frozen: true

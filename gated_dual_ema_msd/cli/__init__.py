@@ -1,0 +1,1 @@
+"""Package component cli."""

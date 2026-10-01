@@ -1,0 +1,607 @@
+{
+  "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean",
+  "purpose": "main training/evaluation source extraction",
+  "changes": [
+    "redirect repo-specific imports to package-local modules",
+    "fix matrix subprocess project root",
+    "support compatibility python -m entry points",
+    "adjust workspace roots for standalone flat package layout",
+    "normalize LF and trailing whitespace, including docstring whitespace; executable Python AST unchanged"
+  ],
+  "files": [
+    {
+      "file": ".gitattributes",
+      "origin": "generated for standalone source extraction",
+      "extracted_sha256": "d60f352d0db1404c70afb4bb8b2ca3fd1c610572aa40720e8a0b7baa7885418c"
+    },
+    {
+      "file": ".gitignore",
+      "origin": "generated for standalone source extraction",
+      "extracted_sha256": "d46cb1d16f0beb5a58f34f63c0069ad4b224660f0cfccde3e12cf798ac15b4d6"
+    },
+    {
+      "file": "README.md",
+      "origin": "generated for standalone source extraction",
+      "extracted_sha256": "862dc524ec699dac7bf637e90f00495ede39c016ebcc59f963ce5ea47af6f684"
+    },
+    {
+      "file": "configs/experiments/direct_vianli/method3_ema_smoothing.yaml",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\configs\\experiments\\direct_vianli\\method3_ema_smoothing.yaml",
+      "original_sha256": "4a7c6e0db19b67393264843dbdee28ceedd728a7fc6a792a490eef30673a97a9",
+      "extracted_sha256": "7286214b78eb384d79982472df869d53252d33f008611b42384308487a220aa7"
+    },
+    {
+      "file": "configs/experiments/direct_vimednli/vimednli_gated_dual_ema_msd.yaml",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\configs\\experiments\\direct_vimednli\\vimednli_gated_dual_ema_msd.yaml",
+      "original_sha256": "8d374d87ad1a16786734cc79ddde31cf514b6ebcd2db3a6454c886e9f02649b5",
+      "extracted_sha256": "6cd42758876dfb644916c767b692c9f8647a8a56a545a699d61c2ced86f66288"
+    },
+    {
+      "file": "configs/experiments/direct_vinli/vinli_gated_dual_ema_msd.yaml",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\configs\\experiments\\direct_vinli\\vinli_gated_dual_ema_msd.yaml",
+      "original_sha256": "fedabc7c83c7f3223f440a4b8ac1f7c8935fe387bd82eea00e15ccf4344618ea",
+      "extracted_sha256": "55fcb30a65c225c0406e2bd8d4bfe6468331e0b28b61cc82000c66b8026dc5cf"
+    },
+    {
+      "file": "configs/experiments/exp001_r2_full_stage1_stage2_maxlen512_seed42.yaml",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\configs\\experiments\\exp001_r2_full_stage1_stage2_maxlen512_seed42.yaml",
+      "original_sha256": "c493210fc933231d138a83f258221d2bc06c6622e1f8f658101e867cabf7d26f",
+      "extracted_sha256": "c493210fc933231d138a83f258221d2bc06c6622e1f8f658101e867cabf7d26f"
+    },
+    {
+      "file": "gated_dual_ema_msd/__init__.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\__init__.py",
+      "original_sha256": "5a38fa4f34fac6c622255464abfe5e76e87ef27171d2eb9cecffaaecfa3833c5",
+      "extracted_sha256": "5a38fa4f34fac6c622255464abfe5e76e87ef27171d2eb9cecffaaecfa3833c5"
+    },
+    {
+      "file": "gated_dual_ema_msd/cli/__init__.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\cli\\__init__.py",
+      "original_sha256": "751710ddc9887c3dd0975b793c17a873f2dc6cd88285b256316d13322a93cf7e",
+      "extracted_sha256": "172f28519403e7374bf6919c0ca8260ab72221968842e179f5ced057d40cd542"
+    },
+    {
+      "file": "gated_dual_ema_msd/cli/evaluate.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\cli\\evaluate.py",
+      "original_sha256": "e4aff6e1ca7432571dfbc14bc86d6d4b8ea231afc2fdc75484a7e76fe567c850",
+      "extracted_sha256": "79bc7e6b8168281886ab0edeb03f0d2c00cee0922c8e3fd5dc75435db9bf5e1c"
+    },
+    {
+      "file": "gated_dual_ema_msd/cli/matrix.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\cli\\matrix.py",
+      "original_sha256": "2bd1103b353ba26c0cf7ba1cd86ab642f8216a7b72848bc40b7705c44280462d",
+      "extracted_sha256": "02518db463948fcc865b1d7aef1dea1e4895855d4ae380e74f31d58dabae66e0"
+    },
+    {
+      "file": "gated_dual_ema_msd/cli/r2.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\cli\\r2.py",
+      "original_sha256": "57abf907d4e5c0d41fcca9dc2661a4bac02ba69b79d5724397238162c316ef19",
+      "extracted_sha256": "57abf907d4e5c0d41fcca9dc2661a4bac02ba69b79d5724397238162c316ef19"
+    },
+    {
+      "file": "gated_dual_ema_msd/cli/train.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\cli\\train.py",
+      "original_sha256": "16c2ef54be77f9ae728a8386ee0d3a3c7af45393b29e732102d6ce02f4ee88c4",
+      "extracted_sha256": "90af9c4c4017b7a34f0a6043d1eb39d943ba53c037bcb762cb33c5ec21803665"
+    },
+    {
+      "file": "gated_dual_ema_msd/compatibility/__init__.py",
+      "origin": "generated for standalone source extraction",
+      "extracted_sha256": "fb5fcfb4003918cbf112b5fa40eba4a2123f34f2a843235b8d01c2946e2fd2e3"
+    },
+    {
+      "file": "gated_dual_ema_msd/compatibility/checkpoints.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\compatibility\\checkpoints.py",
+      "original_sha256": "1f4d66c97748d0f8f511baf4038098fbabb8771703abaf32d1df19d7a22c0cd2",
+      "extracted_sha256": "1f4d66c97748d0f8f511baf4038098fbabb8771703abaf32d1df19d7a22c0cd2"
+    },
+    {
+      "file": "gated_dual_ema_msd/compatibility/root_models/__init__.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\compatibility\\root_models\\__init__.py",
+      "original_sha256": "04c2ab0b8050bb4e8e80cb066406d2c7fae9e8150295e7475bbdaf03ecce0ea2",
+      "extracted_sha256": "7045b9a53268378880a6caf302bde3638c08694a6ad9b34ad9700275a3ec8cb1"
+    },
+    {
+      "file": "gated_dual_ema_msd/compatibility/root_models/ablations.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\compatibility\\root_models\\ablations.py",
+      "original_sha256": "e07f67b3aee36878e51e43a6d8d5b2f996b5783f346b415af0161d6fcff85151",
+      "extracted_sha256": "abd21d15a7ebea771e89a00265a4747df0fed1cc2e9a548dd18abb8d96d154dd"
+    },
+    {
+      "file": "gated_dual_ema_msd/compatibility/root_models/base.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\compatibility\\root_models\\base.py",
+      "original_sha256": "9fb6ec00442759dfa1af7d3d7fcdc6366bf26929a8df0455f1ce6d6dd3cc11a8",
+      "extracted_sha256": "e81392c5f506c94ab0253b1d322817c85bebbd2634dc57391fa3ab2f2bfe40f2"
+    },
+    {
+      "file": "gated_dual_ema_msd/compatibility/root_models/baselines.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\compatibility\\root_models\\baselines.py",
+      "original_sha256": "a56f1d352132a6b58bb2a6bcd1dc4ec101e16d862c319613211ebc45d7220cb7",
+      "extracted_sha256": "cd7e1de18c60cb17a6e5109596946b110aa54c9b1edebd3b23bb1a7099c77747"
+    },
+    {
+      "file": "gated_dual_ema_msd/compatibility/root_models/factory.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\compatibility\\root_models\\factory.py",
+      "original_sha256": "283de4ccce9e5c9e6d369b95f7d4af50284d659003bd2c96578d686320357dd1",
+      "extracted_sha256": "c50096fe3c1548233b0885362b0515527f6a1a428de35e5674c08f2279428a14"
+    },
+    {
+      "file": "gated_dual_ema_msd/compatibility/root_models/flat_cafebert.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\compatibility\\root_models\\flat_cafebert.py",
+      "original_sha256": "ed57e645e211c85f5d4dc823b3961d0ce6242a0fbe92b51ea1ad9dc2b0a8d44d",
+      "extracted_sha256": "dfe83d2ab12da9b4fed144a6b8bcecb90ca137856fad7da9745f0af439261b87"
+    },
+    {
+      "file": "gated_dual_ema_msd/compatibility/root_models/gated_dual.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\compatibility\\root_models\\gated_dual.py",
+      "original_sha256": "f821994a8e60e24cc4478863bbe205b7333e9af199f5a14b69c23ecbe99fdf20",
+      "extracted_sha256": "5705aee025f0c6d6140dc12daa16f3274d0bade8ab639e400ffec940de6c1118"
+    },
+    {
+      "file": "gated_dual_ema_msd/compatibility/root_models/heads.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\compatibility\\root_models\\heads.py",
+      "original_sha256": "2e3645394bcb151b0948019462eeb8bdbcec51346f612c9e4309d9c105e7f291",
+      "extracted_sha256": "70b58ecfd20695f382b2a24d94f14fb47cb3be885f17497dc952f11cf693a077"
+    },
+    {
+      "file": "gated_dual_ema_msd/compatibility/root_models/loss.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\compatibility\\root_models\\loss.py",
+      "original_sha256": "04c5ccdeb8ce4565757f58bacbf2766fa3d2574858c966a55e2379807774efbd",
+      "extracted_sha256": "16ca66b68024c336e197118fbc4a22a8e00310adc3b52c51a61f37b09f33d418"
+    },
+    {
+      "file": "gated_dual_ema_msd/compatibility/root_models/output.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\compatibility\\root_models\\output.py",
+      "original_sha256": "934e15a63af98d6fa56e150d5ad9af12286a8dbdef31b04279d89ccd1e150b35",
+      "extracted_sha256": "b6fd70381a059ffa60d98e70bc2790c70a5bd3cc1781bf80c4b4efdd3bbc94b6"
+    },
+    {
+      "file": "gated_dual_ema_msd/compatibility/root_models/poolers.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\compatibility\\root_models\\poolers.py",
+      "original_sha256": "d2126bd4761b3508f29db51e2e63a84d87a24ca706423570bf0609c97dc772e5",
+      "extracted_sha256": "97878d0ab8c512ec6d94b5cb85c8fdf4be8657879a4d8322151e1d190f42142d"
+    },
+    {
+      "file": "gated_dual_ema_msd/compatibility/standalone_model.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\compatibility\\standalone_model.py",
+      "original_sha256": "9793224f5635c11bd3c0d9393fe5ca9eb7b732822f705d7e2f873d9740056131",
+      "extracted_sha256": "2eb4fa3eed3b8c763f8da9710d48dd32bff5e7df8b48d39a6d0f4c1f62587f16"
+    },
+    {
+      "file": "gated_dual_ema_msd/config/__init__.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\config\\__init__.py",
+      "original_sha256": "7c21bf11a497f30f2d53d2d57016eb1881a3e891143d8372b2761e5e234461c7",
+      "extracted_sha256": "7c21bf11a497f30f2d53d2d57016eb1881a3e891143d8372b2761e5e234461c7"
+    },
+    {
+      "file": "gated_dual_ema_msd/config/contracts.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\config\\contracts.py",
+      "original_sha256": "d770df6262b5328c43937128bab4a9b3fc376fc61c41334ec8cefc872e879f15",
+      "extracted_sha256": "d9c4acda985370c978f60c7d43b58a4b1835c4099c18869f263babd47aff3136"
+    },
+    {
+      "file": "gated_dual_ema_msd/config/experiments.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\config\\experiments.py",
+      "original_sha256": "346c1826a0caa7f3fdecbe268d75539342a4f3a36dfb1f6254f9b15e29d280bf",
+      "extracted_sha256": "094435a14211a22ebc897e7ab1138b58dedcfcae669c7cdbb3c57f12b94e25d4"
+    },
+    {
+      "file": "gated_dual_ema_msd/config/r2_validation.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\config\\r2_validation.py",
+      "original_sha256": "869b91f34a2c3bc1bbea75548c26d91d8ec2090f5b176fd708cd7d4107351b82",
+      "extracted_sha256": "daa31df0610389efc63f67b7fb3de112bc72364f3adcf13d5993c893545146c1"
+    },
+    {
+      "file": "gated_dual_ema_msd/config/test_policy.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\config\\test_policy.py",
+      "original_sha256": "a67cd3de256f9117f2d6c8a7e8b8f715945631393353c08bb545a39e6972f208",
+      "extracted_sha256": "a67cd3de256f9117f2d6c8a7e8b8f715945631393353c08bb545a39e6972f208"
+    },
+    {
+      "file": "gated_dual_ema_msd/config/validation.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\config\\validation.py",
+      "original_sha256": "589cd6e63c6d1bb5487b8e33390806c54cce6f3dc58244359ce8216d86407570",
+      "extracted_sha256": "589cd6e63c6d1bb5487b8e33390806c54cce6f3dc58244359ce8216d86407570"
+    },
+    {
+      "file": "gated_dual_ema_msd/data/__init__.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\data\\__init__.py",
+      "original_sha256": "3886e6203bcfe07e691d0f188aed05b946a4acce8acded21de1eda5872c9b731",
+      "extracted_sha256": "3886e6203bcfe07e691d0f188aed05b946a4acce8acded21de1eda5872c9b731"
+    },
+    {
+      "file": "gated_dual_ema_msd/data/collator.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\data\\collator.py",
+      "original_sha256": "95e54ccdddcb1aee3f72370ee35aa232da25fe7c23e7b2cc34c9703658934474",
+      "extracted_sha256": "e71528fe8bd4c8b36ddc562bd1e5208d373eaf70ad87f3a03fbfd9cdd536f623"
+    },
+    {
+      "file": "gated_dual_ema_msd/data/datamodule.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\data\\datamodule.py",
+      "original_sha256": "107558a35b349d8a99d65554be9f08383e6e306c48d7ffa78b6a435126f2b992",
+      "extracted_sha256": "b439ebbdc246d1f5eca0ccab1485690ce0d03fb267f4d6e2c912b3a1f2c25883"
+    },
+    {
+      "file": "gated_dual_ema_msd/data/dataset.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\data\\dataset.py",
+      "original_sha256": "272c4b83f1b00a1b5b11b299073a30cfe185d794d91777fd99a378806c242191",
+      "extracted_sha256": "272c4b83f1b00a1b5b11b299073a30cfe185d794d91777fd99a378806c242191"
+    },
+    {
+      "file": "gated_dual_ema_msd/data/jtt.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\data\\jtt.py",
+      "original_sha256": "7fd2a6312e176dd0144bbc9fbc0b952b77541e21734284403ec87ea3e589150f",
+      "extracted_sha256": "79940054f436c5565042e2e518b8e6915ee77007f3bdc73cfaa3585adf9a7ba7"
+    },
+    {
+      "file": "gated_dual_ema_msd/data/laurer_vi_nli.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\data\\laurer_vi_nli.py",
+      "original_sha256": "6a4f5a5c4874a0c349211c45bb59771c262ce979ce368a6c226b53a4e24ec23b",
+      "extracted_sha256": "515d466e3cc766f1c959bf8a5453558888f0b946b8dddc604b1814bfe5554b8e"
+    },
+    {
+      "file": "gated_dual_ema_msd/data/loader_adapters.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\data\\loader_adapters.py",
+      "original_sha256": "f5d54cbc9e6afd4b78d04a1663047c948f5f5abb31228c7a72cbcdc7b3431754",
+      "extracted_sha256": "297945c81e26dd3bb64655666ec11fbccee9f2e05309937515e590fb39d35132"
+    },
+    {
+      "file": "gated_dual_ema_msd/data/loading.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\data\\loading.py",
+      "original_sha256": "dc5ee8b6ee9329e0397703e2267e63fd2e3e4749324d5862e200905be5b5629a",
+      "extracted_sha256": "dc5ee8b6ee9329e0397703e2267e63fd2e3e4749324d5862e200905be5b5629a"
+    },
+    {
+      "file": "gated_dual_ema_msd/data/provenance.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\data\\provenance.py",
+      "original_sha256": "05871ed1c5ba7f3bbdb93717451361d49ced63dc60d20af8762969608d63b80e",
+      "extracted_sha256": "da4c181f1f1f65833931ba0743e75df442ad4b61fb9a56bf71580b69f20c8aef"
+    },
+    {
+      "file": "gated_dual_ema_msd/data/records.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\data\\records.py",
+      "original_sha256": "58e6de0ec1894095e6406744d1ba6e185d8f79ed4e0b404471d0616dc510df50",
+      "extracted_sha256": "58e6de0ec1894095e6406744d1ba6e185d8f79ed4e0b404471d0616dc510df50"
+    },
+    {
+      "file": "gated_dual_ema_msd/evaluation/__init__.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\evaluation\\__init__.py",
+      "original_sha256": "5f259bf191ae571631fadbb0ef69cdf02c0783c87d3ef7a801b6db22e3aef23e",
+      "extracted_sha256": "5f259bf191ae571631fadbb0ef69cdf02c0783c87d3ef7a801b6db22e3aef23e"
+    },
+    {
+      "file": "gated_dual_ema_msd/evaluation/evaluator.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\evaluation\\evaluator.py",
+      "original_sha256": "0542c42b1d7948e9178f02559de63e12a0624aebc2a3945a943cf4799f525ce8",
+      "extracted_sha256": "1c40f555438b24f89a4f15e34146560c700fe49050aeea4096557217fd43d9d8"
+    },
+    {
+      "file": "gated_dual_ema_msd/evaluation/inference.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\evaluation\\inference.py",
+      "original_sha256": "357dc7402d7add37f00834ad7e09ad80847edcc9b027351ad88da68475802894",
+      "extracted_sha256": "ac97f9e8c61a43f08841c34660aa0e29006b572182b63a98e5380fa70ae8ae99"
+    },
+    {
+      "file": "gated_dual_ema_msd/evaluation/metrics.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\evaluation\\metrics.py",
+      "original_sha256": "e1f8180f7ff223ba7852ef34581d5643b6ad84cb81249bea9d895c7e7591cade",
+      "extracted_sha256": "7c6bf6b3f4368e774c0a921588d542871866ebe548aa6ac16dea13cce9bcd9b4"
+    },
+    {
+      "file": "gated_dual_ema_msd/evaluation/predictions.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\evaluation\\predictions.py",
+      "original_sha256": "5e8643b274df0dce41ff90a611c8bfceb933df76ed5c5b873ff01d7cec3a574a",
+      "extracted_sha256": "5e8643b274df0dce41ff90a611c8bfceb933df76ed5c5b873ff01d7cec3a574a"
+    },
+    {
+      "file": "gated_dual_ema_msd/evaluation/rows.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\evaluation\\rows.py",
+      "original_sha256": "4ac6b237bbbb00d6e042d4899a5887a7d71c7b877db4a23ff60e513ef275d04d",
+      "extracted_sha256": "4ac6b237bbbb00d6e042d4899a5887a7d71c7b877db4a23ff60e513ef275d04d"
+    },
+    {
+      "file": "gated_dual_ema_msd/experiment_registry.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\experiment_registry.py",
+      "original_sha256": "39656c19b065f865f8e7cf8dfd8e9d137250b23ea1b8d6be8f5cb00e6f870581",
+      "extracted_sha256": "405f2e5158682a6bd36552bade4d8fb360af967f3bd3d8c1b6fa2651149f24a2"
+    },
+    {
+      "file": "gated_dual_ema_msd/models/__init__.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\models\\__init__.py",
+      "original_sha256": "91a87df9756328446dd6286a71bf9d3ddee33764ee8d0dbe453a96b468a146f8",
+      "extracted_sha256": "b2097bc2b1a75f4ac2e77cb1757ef1c30f19bfd3e227bbd9fc7fb6ae86db0640"
+    },
+    {
+      "file": "gated_dual_ema_msd/models/ablations.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\models\\ablations.py",
+      "original_sha256": "5e8d1213266628801f99083888d74cace27e43cce0a268ad9af1b175f3808123",
+      "extracted_sha256": "5d21ab0273bdaf64934234d18a2a5f4f8cbe5494e2b80b386a8558a95fe175e4"
+    },
+    {
+      "file": "gated_dual_ema_msd/models/base.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\models\\base.py",
+      "original_sha256": "6231497eeb2e11ec2fda537a350ffbf20d4bb463eb1257c94da0ac8bd730c0d7",
+      "extracted_sha256": "91fd834fb0e938303d9890264cb40cb83d088de1f1a6500882373d75e5988fe7"
+    },
+    {
+      "file": "gated_dual_ema_msd/models/baselines.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\models\\baselines.py",
+      "original_sha256": "fbb656133c372d7b0fe3fdd42fbda78b5f5451deea671b827675a6b9b3f6d31d",
+      "extracted_sha256": "fc15bc86003a13e212f48c17f06457e73c3bca7f29816c31fe1c8be22e7b4de6"
+    },
+    {
+      "file": "gated_dual_ema_msd/models/factory.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\models\\factory.py",
+      "original_sha256": "7fbb0e7fcccafb0138be65aa68fca40467abe80c05cffe6472cc83ffa4d531aa",
+      "extracted_sha256": "746148ae326c426c0513b867d51a09375b723eae967e90fc085d0f13e35c3a20"
+    },
+    {
+      "file": "gated_dual_ema_msd/models/flat_cafebert.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\models\\flat_cafebert.py",
+      "original_sha256": "8076e98959ce5812544966bb2f57d392fd3fe5565834127527b2e5ee1e3c41ed",
+      "extracted_sha256": "de3efda9661c66777192efb2eef08d7774f048502922532f879cfaedd3727af9"
+    },
+    {
+      "file": "gated_dual_ema_msd/models/gated_dual.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\models\\gated_dual.py",
+      "original_sha256": "fbc2bfabeba4a6efc36c1ccca65b5f3142b84fc2c68e458cf122a0a2d306606e",
+      "extracted_sha256": "7832f18fa8002019ced5959036d77ae827a191a2dd32aa2ea421b77934ead700"
+    },
+    {
+      "file": "gated_dual_ema_msd/models/heads.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\models\\heads.py",
+      "original_sha256": "4d66596e8276bee5a6ad69a6fa65c1636a0c5d09049b5030e09f3020ef533b3d",
+      "extracted_sha256": "d29c9201b5732a2e0382d06cff757f584a97433ba3542ca8d00d0770da7d4c40"
+    },
+    {
+      "file": "gated_dual_ema_msd/models/poolers.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\models\\poolers.py",
+      "original_sha256": "ed1ad32d5bf05ff72b6098cc6ec2793cb531511d8ba8afcccda87be5cddf0bc6",
+      "extracted_sha256": "34384aa8fb3cf40f0ad802cb65c7e7ede15bd5c02093da5bfd09b36cc5830a68"
+    },
+    {
+      "file": "gated_dual_ema_msd/operations/__init__.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\operations\\__init__.py",
+      "original_sha256": "9e096383d083cc6de4428083ab6d8619b7e218e475f52bd80b359a02afee4ec8",
+      "extracted_sha256": "7b8ae1fffa4634ee6102c15039cca3dbfa51bba2e90aa2294fe86c804f77c753"
+    },
+    {
+      "file": "gated_dual_ema_msd/operations/audit_multisource.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\operations\\audit_multisource.py",
+      "original_sha256": "b77770875e3b875ecd0c1a7289498d891bab3660c71a0157f67cd1b7a338e1ef",
+      "extracted_sha256": "b77770875e3b875ecd0c1a7289498d891bab3660c71a0157f67cd1b7a338e1ef"
+    },
+    {
+      "file": "gated_dual_ema_msd/operations/migrate_vinli_checkpoint.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\operations\\migrate_vinli_checkpoint.py",
+      "original_sha256": "b776c8bb679bae34e70f09a2fd1468d733018662fac7fef770f349a2415f7915",
+      "extracted_sha256": "b776c8bb679bae34e70f09a2fd1468d733018662fac7fef770f349a2415f7915"
+    },
+    {
+      "file": "gated_dual_ema_msd/operations/prepare_vianli.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\operations\\prepare_vianli.py",
+      "original_sha256": "773ef2a8074bd4469eaaedfa0e2c38003b69f6a9988e81f3d795a5ef4ccf44b0",
+      "extracted_sha256": "773ef2a8074bd4469eaaedfa0e2c38003b69f6a9988e81f3d795a5ef4ccf44b0"
+    },
+    {
+      "file": "gated_dual_ema_msd/operations/prepare_vimednli_multisource.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\operations\\prepare_vimednli_multisource.py",
+      "original_sha256": "dad48c5ca6813f0cc553a8ce1b036a563f76e7472ff1f0a007ac70a6b7a06add",
+      "extracted_sha256": "dad48c5ca6813f0cc553a8ce1b036a563f76e7472ff1f0a007ac70a6b7a06add"
+    },
+    {
+      "file": "gated_dual_ema_msd/operations/prepare_vinli_multisource.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\operations\\prepare_vinli_multisource.py",
+      "original_sha256": "2fb7a6caff918d17afffac213f8ac984eebe60d62942dd421beb77d273e846cb",
+      "extracted_sha256": "2fb7a6caff918d17afffac213f8ac984eebe60d62942dd421beb77d273e846cb"
+    },
+    {
+      "file": "gated_dual_ema_msd/tracking/__init__.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\tracking\\__init__.py",
+      "original_sha256": "5e57c291f56a4c3328b59962c414df2e0dc17f0da287febca2267abb11060272",
+      "extracted_sha256": "5e57c291f56a4c3328b59962c414df2e0dc17f0da287febca2267abb11060272"
+    },
+    {
+      "file": "gated_dual_ema_msd/tracking/hf.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\tracking\\hf.py",
+      "original_sha256": "23382acf9c5f496e14cc6f0121f17aaf66498b2756e1f5fda69d9b6a0d2738cb",
+      "extracted_sha256": "f09cf0ec9842923d6e497a81bb13b5722be920078f4735a30e1c561f8a23381e"
+    },
+    {
+      "file": "gated_dual_ema_msd/tracking/legacy.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\tracking\\legacy.py",
+      "original_sha256": "408375b9be71705cd658d4c2d621df4f8d09e24db04dcdf038be4cfd10ff2017",
+      "extracted_sha256": "e3f84b86452cbf9926d15ecfdb5034e0a39c5b57846ecad71832eb4bce8eb5b2"
+    },
+    {
+      "file": "gated_dual_ema_msd/tracking/session.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\tracking\\session.py",
+      "original_sha256": "87461a10ba83bf3dabe163d5276ee9583dcd8a927840a1d4e795e4ca583e2e5f",
+      "extracted_sha256": "87461a10ba83bf3dabe163d5276ee9583dcd8a927840a1d4e795e4ca583e2e5f"
+    },
+    {
+      "file": "gated_dual_ema_msd/train.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\train.py",
+      "original_sha256": "2ad24b485c16055a96cd4e65f33e67f3cd1d72edb25bdca2525a89f297d60467",
+      "extracted_sha256": "997ec3ea10f698ca32e11439ff1f5121af5f54b929fd89a5b6ca004d7db8f0cd"
+    },
+    {
+      "file": "gated_dual_ema_msd/trainer.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\trainer.py",
+      "original_sha256": "e819871ed8ab03f611d9a62d85b75c9550d17ef06f5a945a0c9eaef17ddcf853",
+      "extracted_sha256": "6bdce0a7d2548422793f1de8f3812f6a93722b04039937fa5b95561ca48a8a20"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/__init__.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\__init__.py",
+      "original_sha256": "6c7076ce20691417d130d45fdeddb17a54ebe6b8ff9cbe423257b086db201ad5",
+      "extracted_sha256": "6c7076ce20691417d130d45fdeddb17a54ebe6b8ff9cbe423257b086db201ad5"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/callbacks.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\callbacks.py",
+      "original_sha256": "b4015984a3d21f4ab1a0759bf42f7a22ef1e055b85f7b1df1577ef84db4e1d76",
+      "extracted_sha256": "3e5d1f5046b7a364674335296433a0b62c4f69934281425350003d690c96d45d"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/checkpoints.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\checkpoints.py",
+      "original_sha256": "c34f1bbfcd3d0c6adfbf593aff3d41edf321f1d88197de1a6138d66392c5368c",
+      "extracted_sha256": "c34f1bbfcd3d0c6adfbf593aff3d41edf321f1d88197de1a6138d66392c5368c"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/consistency_losses.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\consistency_losses.py",
+      "original_sha256": "c4a76912da54430de6a0dc040cd8f206229688c0aa16cd6e59528c81b333e67a",
+      "extracted_sha256": "c4a76912da54430de6a0dc040cd8f206229688c0aa16cd6e59528c81b333e67a"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/direct.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\direct.py",
+      "original_sha256": "d5b088f9c81f79a5c9267bc7e945414bf01a8a97cc12a536e50b221cf689570b",
+      "extracted_sha256": "1f65746af5b2f07de93a1df70d43009af25da43367d71bbe9bc63aad19a12b3e"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/ema.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\ema.py",
+      "original_sha256": "ac688d3a0b2b243ff231bf85c4ce7b252d48e469f2caa92ab1f5711e732c1b03",
+      "extracted_sha256": "efea48b4d507c5974ee52c63699794226b81ba957b38e5928fd953474f2c9dc7"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/ema_context.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\ema_context.py",
+      "original_sha256": "e70f0cea3c8a3aa472dc4c16c04a759ef860ae89afebf365cdfcf60293cd5f5b",
+      "extracted_sha256": "e70f0cea3c8a3aa472dc4c16c04a759ef860ae89afebf365cdfcf60293cd5f5b"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/lora.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\lora.py",
+      "original_sha256": "0cd153cf9d6c3e943058693c1a40862b6de79278bf38a209b02cb1638da880e8",
+      "extracted_sha256": "16c47841882039bda4fd7b7b9e55c3c9dcb0ee0f8aa6b9e7935495907b4dba81"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/optimizer_step.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\optimizer_step.py",
+      "original_sha256": "92fd0ed0f191ed56e279cd0a1d458a2ae127eb20871d34ca91f011b93d41433a",
+      "extracted_sha256": "92fd0ed0f191ed56e279cd0a1d458a2ae127eb20871d34ca91f011b93d41433a"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/r2_protocol.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\r2_protocol.py",
+      "original_sha256": "16925db9666083e0fb4dfbb79fe60b437d2646600c25ed3fab05c34caaff94ef",
+      "extracted_sha256": "5bdfd9fdce821febdd351505546db9b7e13400a1344a8a37599e194f9328dd35"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/r2_runtime.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\r2_runtime.py",
+      "original_sha256": "4b7d6fcf0a88646766eda496ff433e08e5f761943704d61ffcbf51b3ed2996cf",
+      "extracted_sha256": "57ba99651180b817b21cb447a71bbf27c2d4ab6568c4ec4609488449cd8cc7ec"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/r2_stage.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\r2_stage.py",
+      "original_sha256": "19d2034bdcdb5a746df5a5a6b3c5462a18a0e054d2d64ae6744fc94dbb3fdd02",
+      "extracted_sha256": "affe3e81874c6812864e826033d3f3baa804502f9707104b1616ace3212d8be1"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/recadam.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\recadam.py",
+      "original_sha256": "cc2141c885de65862f8f5275707fe49f02982839434ccc7cfcbdb3bda3657836",
+      "extracted_sha256": "115a43fe34af54ca584f5b0b16e186f07b591b91ac6a77ab2a90d2a2643cb2a2"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/runtime.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\runtime.py",
+      "original_sha256": "f04578ab4d47f94c071e471e7124fe22be7021fb62a2425b96b91b328af2ec5e",
+      "extracted_sha256": "f04578ab4d47f94c071e471e7124fe22be7021fb62a2425b96b91b328af2ec5e"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/sam.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\sam.py",
+      "original_sha256": "45b776b7bb77dbf976e5dc8391bacf7ab3180cbae2b4d6f381d99bf10559bf2f",
+      "extracted_sha256": "9570b7f3111fbad9aa680f3da6d4c39d27f024f1ef93ef669cb437898bb86411"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/selection.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\selection.py",
+      "original_sha256": "8b54d59480dbf08bf4394faf9d0d10fc5c56e371bd991df1bd201ef078f8bef6",
+      "extracted_sha256": "8b54d59480dbf08bf4394faf9d0d10fc5c56e371bd991df1bd201ef078f8bef6"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/train_exp001.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\train_exp001.py",
+      "original_sha256": "08984358d50801084b89787389b8bd2acf18bf70694e7b1d00d6a73aa036d418",
+      "extracted_sha256": "505f50bcae6ff6eb48b26d98dc8013aa32f63e3168f13199f69b1ede7657f764"
+    },
+    {
+      "file": "gated_dual_ema_msd/training/trainer.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\trainer.py",
+      "original_sha256": "a98f563c6def0cca5a5435be82f731a716aa52d6e8d150fdf68af49e772b20f9",
+      "extracted_sha256": "442bb0190d915fcdf5c582bd4af6a732cf989edce2a073eecf67b87ab340edb0"
+    },
+    {
+      "file": "gated_dual_ema_msd/utils/__init__.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\utils\\__init__.py",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "extracted_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "file": "gated_dual_ema_msd/utils/env.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\utils\\env.py",
+      "original_sha256": "dfaabb2ee16bf919a5c13690946129e24f8d19eb699b16e327ddfec19e570eac",
+      "extracted_sha256": "3b1c740cbffd2a0ad56acb004b820feaaf6778a7fffaa8c7b29eb52e73d30257"
+    },
+    {
+      "file": "gated_dual_ema_msd/utils/hf_hub_helper.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\utils\\hf_hub_helper.py",
+      "original_sha256": "23382acf9c5f496e14cc6f0121f17aaf66498b2756e1f5fda69d9b6a0d2738cb",
+      "extracted_sha256": "f09cf0ec9842923d6e497a81bb13b5722be920078f4735a30e1c561f8a23381e"
+    },
+    {
+      "file": "gated_dual_ema_msd/utils/wandb_helper.py",
+      "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\utils\\wandb_helper.py",
+      "original_sha256": "0d60b76653158324879e933a2d17bd75b29adf5f52d9e7fd34a3befbaba340d8",
+      "extracted_sha256": "0b77f200c7115e2e4fab99177291024483415803030e5d8fafdfebcef1545222"
+    },
+    {
+      "file": "pyproject.toml",
+      "origin": "generated for standalone source extraction",
+      "extracted_sha256": "324f03803607a0e37b7dc869750afe7b25505f9de4a8a2e7d766885826b0aeed"
+    },
+    {
+      "file": "requirements.txt",
+      "origin": "generated for standalone source extraction",
+      "extracted_sha256": "10f85e13b17275275079ecf2f40c0e3ac832a03e7ba145f0c17698ce641be472"
+    },
+    {
+      "file": "scripts/audit_multisource.py",
+      "origin": "generated for standalone source extraction",
+      "extracted_sha256": "e1aa2b33ef502dd45f2435a8202e7b53b8065829a206d8510c8505b2e4181850"
+    },
+    {
+      "file": "scripts/migrate_vinli_checkpoint.py",
+      "origin": "generated for standalone source extraction",
+      "extracted_sha256": "ebe52f5e5bceb3e498661df2cfaa5ade12a1705453087214fc2d798f0c5ffcbd"
+    },
+    {
+      "file": "scripts/prepare_vianli.py",
+      "origin": "generated for standalone source extraction",
+      "extracted_sha256": "1d4cdf3bb90c1a22e26e8307704a866b7b7840f7378fb0fc3c4b82d9a68796fb"
+    },
+    {
+      "file": "scripts/prepare_vimednli_multisource.py",
+      "origin": "generated for standalone source extraction",
+      "extracted_sha256": "101aad7a2702fc81c3b5bdb9d9e6db6c82f91f16376f4b10f5d490d8e9d60854"
+    },
+    {
+      "file": "scripts/prepare_vinli_multisource.py",
+      "origin": "generated for standalone source extraction",
+      "extracted_sha256": "50d33bc4e6550c121333bad3a3d2903e22d6a04f59ff37687301b76a0300875e"
+    },
+    {
+      "file": "verify_source.py",
+      "origin": "generated for standalone source extraction",
+      "extracted_sha256": "590adc20f0a8c3d1ad4e3518f814b698e00736c03926271d3730f30fa49955be"
+    }
+  ]
+}

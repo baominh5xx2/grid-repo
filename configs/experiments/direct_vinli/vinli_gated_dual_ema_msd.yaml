@@ -1,0 +1,89 @@
+project:
+  experiment_id: EXP-001-VINLI-5-CONFIG-SWEEP
+  experiment_name: exp001-direct-vinli-5-config-sweep
+  method_name: Gated-Dual CafeBERT + Multi-Sample Dropout + Parameter EMA (ViNLI 5-Config Parallel Sweep)
+  seed: 42
+  target_test_locked: false
+model:
+  name: uitnlp/CafeBERT
+  revision: af76fcf2a04096b2b54b348a3e4eb48253c93c5d
+  max_length: 512
+  dropout: 0.1
+  label_smoothing: 0.02
+  pool_mode: gated_dual
+  segment_pooling: attentive
+  relation_hidden: 128
+  gate_bias: -1.0
+data:
+  vinli_dir: data/external/vinli
+  max_lengths:
+    vinli: 512
+training:
+  physical_batch_size: 4
+  gradient_accumulation_steps: 4
+  effective_batch_size: 16
+  fp16_train: true
+  fp32_eval: true
+  learning_rate: 1.0e-05
+  weight_decay: 0.005
+  warmup_ratio: 0.06
+  max_grad_norm: 1.0
+  max_epochs: 7
+  eval_optimizer_steps: 100
+  early_stopping_patience_evals: 10
+experiments:
+  - id: cfg1_anchor_ema995_h128
+    description: "CFG1 Anchor: EMA 0.995 @ step 50 + Bottleneck 128 + LR 1.0e-5 + MSD 5-path + LS 0.02"
+    use_ema: true
+    ema_decay: 0.995
+    ema_start_step: 50
+    relation_hidden: 128
+    learning_rate: 1.0e-05
+    label_smoothing: 0.02
+    use_multi_sample_dropout: true
+    msd_dropouts: [0.1, 0.2, 0.3, 0.4, 0.5]
+
+  - id: cfg2_deep_bottleneck_h256
+    description: "CFG2 Deeper Bottleneck: Bottleneck 256 + EMA 0.995 @ step 50 + LR 1.0e-5 + MSD 5-path"
+    use_ema: true
+    ema_decay: 0.995
+    ema_start_step: 50
+    relation_hidden: 256
+    learning_rate: 1.0e-05
+    label_smoothing: 0.02
+    use_multi_sample_dropout: true
+    msd_dropouts: [0.1, 0.2, 0.3, 0.4, 0.5]
+
+  - id: cfg3_head_lr_2e5
+    description: "CFG3 Higher Head LR: Backbone LR 1.0e-5 + Head LR 2.0e-5 + Bottleneck 128 + EMA 0.995"
+    use_ema: true
+    ema_decay: 0.995
+    ema_start_step: 50
+    relation_hidden: 128
+    learning_rate: 1.0e-05
+    head_learning_rate: 2.0e-05
+    label_smoothing: 0.02
+    use_multi_sample_dropout: true
+    msd_dropouts: [0.1, 0.2, 0.3, 0.4, 0.5]
+
+  - id: cfg4_slow_ema_998
+    description: "CFG4 Slower EMA Horizon: EMA 0.998 @ step 100 + Bottleneck 128 + LR 1.0e-5 + MSD 5-path"
+    use_ema: true
+    ema_decay: 0.998
+    ema_start_step: 100
+    relation_hidden: 128
+    learning_rate: 1.0e-05
+    label_smoothing: 0.02
+    use_multi_sample_dropout: true
+    msd_dropouts: [0.1, 0.2, 0.3, 0.4, 0.5]
+
+  - id: cfg5_tight_label_smooth_01
+    description: "CFG5 Tight Label Smoothing: LS 0.01 + EMA 0.995 @ step 50 + Bottleneck 128 + LR 1.0e-5"
+    use_ema: true
+    ema_decay: 0.995
+    ema_start_step: 50
+    relation_hidden: 128
+    learning_rate: 1.0e-05
+    label_smoothing: 0.01
+    use_multi_sample_dropout: true
+    msd_dropouts: [0.1, 0.2, 0.3, 0.4, 0.5]

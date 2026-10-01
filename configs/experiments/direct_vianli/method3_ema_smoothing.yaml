@@ -1,0 +1,110 @@
+project:
+  experiment_id: EXP-001-FINAL-SOTA
+  experiment_name: exp001-direct-vianli-final-sota-batch
+  method_name: Gated-Dual CafeBERT + Multi-Sample Dropout + Parameter EMA (Final SOTA
+    Batch)
+  seed: 42
+  target_test_locked: false
+model:
+  name: uitnlp/CafeBERT
+  revision: af76fcf2a04096b2b54b348a3e4eb48253c93c5d
+  max_length: 512
+  dropout: 0.1
+  label_smoothing: 0.02
+  pool_mode: gated_dual
+  segment_pooling: attentive
+  relation_hidden: 128
+  gate_bias: -1.0
+data:
+  vianli_dir: data/processed/vianli_clean
+  max_lengths:
+    vianli: 512
+training:
+  physical_batch_size: 4
+  gradient_accumulation_steps: 4
+  effective_batch_size: 16
+  fp16_train: true
+  fp32_eval: true
+  learning_rate: 1.0e-05
+  weight_decay: 0.005
+  warmup_ratio: 0.06
+  max_grad_norm: 1.0
+  max_epochs: 7
+  eval_optimizer_steps: 50
+  early_stopping_patience_evals: 4
+experiments:
+- id: m3_final_cfg1_ema_992_lr10
+  description: 'Final SOTA #1: Standard SOTA (LR 1.0e-5, EMA 0.992 @ step 100, MSD
+    5-path)'
+  use_ema: true
+  ema_decay: 0.992
+  ema_start_step: 100
+  use_multi_sample_dropout: true
+  msd_dropouts:
+  - 0.1
+  - 0.2
+  - 0.3
+  - 0.4
+  - 0.5
+  learning_rate: 1.0e-05
+  warmup_ratio: 0.06
+- id: m3_final_cfg2_ema_992_lr11
+  description: 'Final SOTA #2: High-Momentum SOTA (LR 1.1e-5, EMA 0.992 @ step 100,
+    Warmup 0.08)'
+  use_ema: true
+  ema_decay: 0.992
+  ema_start_step: 100
+  use_multi_sample_dropout: true
+  msd_dropouts:
+  - 0.1
+  - 0.2
+  - 0.3
+  - 0.4
+  - 0.5
+  learning_rate: 1.1e-05
+  warmup_ratio: 0.08
+- id: m3_final_cfg3_ema_993_start50
+  description: 'Final SOTA #3: Smooth Gradient (LR 1.0e-5, EMA 0.993 @ step 50, MSD
+    5-path)'
+  use_ema: true
+  ema_decay: 0.993
+  ema_start_step: 50
+  use_multi_sample_dropout: true
+  msd_dropouts:
+  - 0.1
+  - 0.2
+  - 0.3
+  - 0.4
+  - 0.5
+  learning_rate: 1.0e-05
+  warmup_ratio: 0.06
+- id: m3_final_cfg4_ema_991_lr10
+  description: 'Final SOTA #4: Fast Tracking EMA (LR 1.0e-5, EMA 0.991 @ step 100,
+    MSD 5-path)'
+  use_ema: true
+  ema_decay: 0.991
+  ema_start_step: 100
+  use_multi_sample_dropout: true
+  msd_dropouts:
+  - 0.1
+  - 0.2
+  - 0.3
+  - 0.4
+  - 0.5
+  learning_rate: 1.0e-05
+  warmup_ratio: 0.06
+- id: m3_final_cfg5_ema_995_start50
+  description: 'Final SOTA #5: High-Inertia Flat Minima (LR 1.0e-5, EMA 0.995 @ step
+    50, MSD 5-path)'
+  use_ema: true
+  ema_decay: 0.995
+  ema_start_step: 50
+  use_multi_sample_dropout: true
+  msd_dropouts:
+  - 0.1
+  - 0.2
+  - 0.3
+  - 0.4
+  - 0.5
+  learning_rate: 1.0e-05
+  warmup_ratio: 0.06
