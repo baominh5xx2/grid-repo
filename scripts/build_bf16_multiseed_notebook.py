@@ -17,9 +17,9 @@ def code(source, tag):
 
 
 markdown("""
-    # BF16 · all registered methods · three seeds
+    # M3_FULL · BF16 · three seeds
 
-    **Default: 11 configurations × 3 datasets × seeds 42/2024/3407 = 99 independent runs.**
+    **M3_FULL × 3 datasets × seeds 42/2024/3407 = 9 independent runs.**
     CafeBERT and datasets use pinned revisions. Training is BF16, evaluation FP32;
     ViNLI/ViANLI max length 512, ViMedNLI 256. Checkpoints are selected on dev.
     **Test stays locked throughout this notebook.**
@@ -33,8 +33,8 @@ markdown("""
     revision. Google Drive holds progress, per-run results and mean/std tables.
     Local generated weight copies are removed only after HF verification.
 
-    This matrix contains the repository's three baselines, four main methods and
-    four ablations. Select fewer datasets/methods in the first cell if needed.
+    The main method is **M3_FULL: Gated-Dual CafeBERT + Multi-Sample Dropout + EMA**.
+    Select datasets and hyperparameters in the first cell if needed.
 """)
 code("""
     import os
@@ -45,11 +45,9 @@ code("""
 
     REPO_URL = "https://github.com/baominh5xx2/grid-repo.git"
     SOURCE_REF = "main"  # First session captures its SHA; resume reuses that SHA.
-    RUN_GROUP = "bf16-multiseed-2026-10-03"
+    RUN_GROUP = "m3-full-bf16-multiseed-2026-10-03"
     DATASETS = ["vinli", "vianli", "vimednli"]
-    METHODS = ["B0_CLS", "B1_PARAM_MATCHED_CLS", "B2_SIMPLE_RELATION",
-               "M0_RELATION_GATE", "M1_RELATION_MSD", "M2_RELATION_EMA", "M3_FULL",
-               "A1_MEAN_POOL", "A2_NO_INTERACTION", "A3_NO_BOTTLENECK", "A4_NO_GATE"]
+    METHODS = ["M3_FULL"]
     SEEDS = [42, 2024, 3407]
     USE_DRIVE = True
     HF_PRIVATE = False
@@ -239,7 +237,7 @@ markdown("""
     ## Results across seeds
     `all_runs.csv` contains each verified run; `paper_summary.csv` contains dev
     Macro-F1 mean/sample standard deviation and the number of completed seeds.
-    Check the seed count before comparing methods. Test columns remain empty.
+    Check that all three seeds completed for each dataset. Test columns remain empty.
 """)
 code("""
     from gated_dual_ema_msd.cli.matrix import collect_results, write_summaries
@@ -263,10 +261,10 @@ markdown("""
 
 notebook = {"cells": cells, "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
              "language_info": {"name": "python", "version": "3.11"}, "accelerator": "GPU",
-             "colab": {"name": "bf16_multiseed_all_methods.ipynb", "provenance": []}}, "nbformat": 4, "nbformat_minor": 5}
+             "colab": {"name": "bf16_multiseed_main_method.ipynb", "provenance": []}}, "nbformat": 4, "nbformat_minor": 5}
 for index, cell in enumerate(cells):
     cell["id"] = f"bf16-{index:02d}"
-target = ROOT / "notebooks/bf16_multiseed_all_methods.ipynb"
+target = ROOT / "notebooks/bf16_multiseed_main_method.ipynb"
 target.parent.mkdir(parents=True, exist_ok=True)
 target.write_bytes((json.dumps(notebook, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
 print(target)

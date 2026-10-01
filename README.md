@@ -52,9 +52,10 @@ results in an existing directory are skipped unless `--rerun` is supplied.
 
 ## BF16 multi-seed notebook
 
-Open [bf16_multiseed_all_methods.ipynb in Colab](https://colab.research.google.com/github/baominh5xx2/grid-repo/blob/main/notebooks/bf16_multiseed_all_methods.ipynb).
-The default is **11 configurations × 3 datasets × seeds 42/2024/3407 = 99 runs**.
-The first cell controls methods, datasets, seeds and hyperparameters. Add
+Open [bf16_multiseed_main_method.ipynb in Colab](https://colab.research.google.com/github/baominh5xx2/grid-repo/blob/main/notebooks/bf16_multiseed_main_method.ipynb).
+The notebook runs **M3_FULL × 3 datasets × seeds 42/2024/3407 = 9 runs**.
+M3_FULL is Gated-Dual CafeBERT with Multi-Sample Dropout and EMA.
+The first cell controls datasets, seeds and hyperparameters. Add
 `HF_TOKEN` and `WANDB_API_KEY` in Colab Secrets, select a BF16-capable CUDA GPU,
 and run the cells in order. `HF_PRIVATE=False` is explicit in the configuration.
 
@@ -65,12 +66,6 @@ metadata and dev predictions, read back at an immutable revision. Reuse
 `RUN_GROUP` to resume completed verified runs; interrupted training starts again.
 Test stays locked. Local generated checkpoint copies are cleaned after HF
 verification to keep runtime disk usage bounded.
-
-CLI equivalent for the explicitly requested multi-seed protocol:
-
-```sh
-python -m gated_dual_ema_msd.cli.matrix --cohort multiseed --datasets vinli vianli vimednli --output_dir outputs/bf16_multiseed --parallel_jobs 1
-```
 
 ## Source layout
 

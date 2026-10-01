@@ -11,7 +11,8 @@
     "disable gradient loss scaling and gate unsupported CUDA GPUs before training",
     "fix missing Counter import in the existing R2 stage; verified by synthetic BF16 integration",
     "user-approved three-seed protocol for all eleven registered methods and explicit multiseed cohort",
-    "add output-free BF16 Colab notebook, persistent resume manifest, pinned data preparation, verified immutable HF artifacts and W&B linkage"
+    "add output-free BF16 Colab notebook, persistent resume manifest, pinned data preparation, verified immutable HF artifacts and W&B linkage",
+    "correct notebook scope to M3_FULL only, preserving three datasets and three seeds (9 runs)"
   ],
   "files": [
     {
@@ -27,7 +28,7 @@
     {
       "file": "README.md",
       "origin": "generated for standalone source extraction",
-      "extracted_sha256": "2b336a3279bc6e1b693c679a23bb05f46a4e1c2f55b548e027b2761fd6f2beb5"
+      "extracted_sha256": "4fd59df56049edc054c114cca99b41b52cdf08b08293ec403170997e06986880"
     },
     {
       "file": "configs/experiments/direct_vianli/method3_ema_smoothing.yaml",
@@ -579,9 +580,9 @@
       "extracted_sha256": "0b77f200c7115e2e4fab99177291024483415803030e5d8fafdfebcef1545222"
     },
     {
-      "file": "notebooks/bf16_multiseed_all_methods.ipynb",
-      "origin": "added for BF16 multi-seed notebook",
-      "extracted_sha256": "162a9cd28cf2da35389ec53227cc07c833ec0dcacb28a64acc44ea888850e010"
+      "file": "notebooks/bf16_multiseed_main_method.ipynb",
+      "origin": "renamed generated notebook; corrected to main M3_FULL method only",
+      "extracted_sha256": "63803f65047b34cc3778cb1935c6ecc05fefe0200e6bbccb754ede4c6eddf130"
     },
     {
       "file": "pyproject.toml",
@@ -601,7 +602,7 @@
     {
       "file": "scripts/build_bf16_multiseed_notebook.py",
       "origin": "added for BF16 multi-seed notebook",
-      "extracted_sha256": "f3b3bbcf784c30e0e8b9158250e39f448072c9755fa95ea3bd74fad42b7a6bd4"
+      "extracted_sha256": "6dbe81d68e7fd70875ab3cafff3a66b3c5841f964964c45c2dec742e8d85d41b"
     },
     {
       "file": "scripts/migrate_vinli_checkpoint.py",
@@ -626,7 +627,7 @@
     {
       "file": "tests/test_notebook_batch.py",
       "origin": "added for BF16 multi-seed notebook",
-      "extracted_sha256": "2e796cd27b28c3e86d2e8e5f07ffa54e80fc5481c4d4ada31d7c59a10311adeb"
+      "extracted_sha256": "65762686aab5994fe911b949d793190180dbfc86a6598a4b320aa8a76c5839d1"
     },
     {
       "file": "tests/test_precision.py",

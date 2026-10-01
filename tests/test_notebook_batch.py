@@ -36,7 +36,7 @@ class NotebookBatchTests(unittest.TestCase):
                 bind_manifest(root, dict(manifest, precision="fp16"))
 
     def test_notebook_is_clean_and_all_code_cells_compile(self):
-        path = ROOT / "notebooks/bf16_multiseed_all_methods.ipynb"
+        path = ROOT / "notebooks/bf16_multiseed_main_method.ipynb"
         self.assertTrue(path.is_file())
         notebook = json.loads(path.read_text(encoding="utf-8"))
         self.assertEqual(notebook["nbformat"], 4)
@@ -88,7 +88,7 @@ class NotebookBatchTests(unittest.TestCase):
         self.assertEqual(command[command.index("--seed") + 1], "3407")
 
     def test_notebook_configuration_and_plan_execute_offline(self):
-        notebook = json.loads((ROOT / "notebooks/bf16_multiseed_all_methods.ipynb").read_text(encoding="utf-8"))
+        notebook = json.loads((ROOT / "notebooks/bf16_multiseed_main_method.ipynb").read_text(encoding="utf-8"))
         sources = {cell["metadata"]["tags"][0]: "".join(cell["source"]) for cell in notebook["cells"] if cell["cell_type"] == "code"}
         namespace = {"display": lambda value: None}
         exec(compile(sources["configuration"], "configuration", "exec"), namespace)
@@ -107,8 +107,10 @@ class NotebookBatchTests(unittest.TestCase):
             namespace.update(previous=None, SOURCE_SHA="a" * 40, OUTPUT_ROOT=pathlib.Path(temporary), REPO_DIR=ROOT)
             with patch.dict(sys.modules, {"wandb": wandb}), patch("huggingface_hub.HfApi", FakeHub), patch.dict(os.environ, {"HF_TOKEN": "offline-test-only"}):
                 exec(compile(sources["tracking-preflight"], "tracking-preflight", "exec"), namespace)
-            self.assertEqual(len(namespace["JOBS"]), 99)
-            self.assertEqual(len(set(namespace["api"].created)), 99)
+            self.assertEqual(namespace["METHODS"], ["M3_FULL"])
+            self.assertEqual(len(namespace["JOBS"]), 9)
+            self.assertTrue(all(job.experiment_id == "M3_FULL" for job in namespace["JOBS"]))
+            self.assertEqual(len(set(namespace["api"].created)), 9)
             self.assertEqual(namespace["preflight_path"], "offline/project/preflight")
 
     def test_hf_readback_is_immutable_and_detects_modified_weights(self):
