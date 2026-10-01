@@ -1,7 +1,7 @@
 """Canonical registry for the 11 baseline/ablation configurations.
 
 This module is the single source of truth shared by the single-run CLI and the
-57-run matrix launcher. It contains configuration only; importing it never
+multi-seed matrix launcher. It contains configuration only; importing it never
 loads CafeBERT or touches a dataset.
 """
 from __future__ import annotations
@@ -30,7 +30,7 @@ class ExperimentDefinition:
     model_type: str
     use_msd: bool = False
     use_ema: bool = False
-    seeds: Tuple[int, ...] = SINGLE_SEED
+    seeds: Tuple[int, ...] = MAIN_SEEDS
     model_kwargs: Mapping[str, Any] = field(default_factory=dict)
     family: str = "ablation"
 

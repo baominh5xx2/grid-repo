@@ -1,0 +1,216 @@
+"""Resumable notebook batch: isolated BF16 runs and verified HF artifacts."""
+from __future__ import annotations
+
+import hashlib
+import json
+import pathlib
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+import pandas as pd
+from transformers import AutoConfig, AutoTokenizer
+
+from gated_dual_ema_msd.cli.matrix import MatrixJob, write_summaries
+from gated_dual_ema_msd.config.contracts import DATASET_MAX_LENGTHS, DATASET_REVISIONS, MODEL_NAME, MODEL_REVISION, parse_label
+from gated_dual_ema_msd.data.loading import read_jsonl
+from gated_dual_ema_msd.evaluation.predictions import validate_predictions
+from gated_dual_ema_msd.tracking.hf import push_run_artifacts
+from gated_dual_ema_msd.training.r2_runtime import sha256_file
+
+DATA_DIRS = {"vinli": "data/external/vinli", "vianli": "data/processed/vianli_clean", "vimednli": "data/external/vimednli"}
+COUNTS = {"vinli": (18282, 2255), "vianli": (8010, 1000), "vimednli": (11217, 1395)}
+
+
+def write_json(path: pathlib.Path, value: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    temporary.replace(path)
+
+
+def manifest_digest(manifest: dict) -> str:
+    return hashlib.sha256(json.dumps(manifest, sort_keys=True).encode()).hexdigest()
+
+
+def bind_manifest(output_root: pathlib.Path, manifest: dict) -> str:
+    path = pathlib.Path(output_root) / "batch_manifest.json"
+    if path.exists() and json.loads(path.read_text(encoding="utf-8")) != manifest:
+        raise ValueError("Existing batch manifest differs. Restore the original settings/source SHA or choose a new RUN_GROUP.")
+    write_json(path, manifest)
+    return manifest_digest(manifest)
+
+
+def prepare_data(repo: pathlib.Path, datasets: list[str]) -> dict:
+    """Materialize pinned data once and bind train/dev hashes; never evaluate test."""
+    from gated_dual_ema_msd.operations import prepare_vianli, prepare_vinli_multisource, prepare_vimednli_multisource
+    for dataset in datasets:
+        directory = repo / DATA_DIRS[dataset]
+        if not (directory / "manifest.json").exists():
+            if dataset == "vianli":
+                prepare_vianli.prepare_dataset(repo / "data/raw", directory)
+            elif dataset == "vinli":
+                prepare_vinli_multisource.prepare_dataset(directory)
+            else:
+                prepare_vimednli_multisource.prepare_dataset(directory)
+    fingerprints = {}
+    for dataset in datasets:
+        directory = repo / DATA_DIRS[dataset]
+        manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
+        if manifest["source"]["revision"] != DATASET_REVISIONS[dataset]:
+            raise ValueError(f"Pinned data revision mismatch: {dataset}")
+        metadata = manifest.get("clean_splits", manifest.get("splits"))
+        splits = {}
+        for split, expected_count in zip(("train", "dev"), COUNTS[dataset]):
+            path = directory / f"{split}.jsonl"
+            records = read_jsonl(path)
+            ids = [str(row["id"]) for row in records]
+            if len(records) != expected_count or len(set(ids)) != len(ids):
+                raise ValueError(f"Unexpected count or duplicate IDs: {dataset}/{split}")
+            for row in records:
+                parse_label(row["label"], str(row["id"]))
+            digest = sha256_file(path)
+            if digest != metadata[split]["output_sha256"]:
+                raise ValueError(f"Prepared data hash mismatch: {dataset}/{split}")
+            splits[split] = {"row_count": len(records), "sha256": digest}
+        fingerprints[dataset] = {"revision": DATASET_REVISIONS[dataset], "max_length": DATASET_MAX_LENGTHS[dataset], "splits": splits}
+    return fingerprints
+
+
+def train_command(job: MatrixJob, config: dict, output_root: pathlib.Path) -> list[str]:
+    command = [sys.executable, "-u", "-m", "gated_dual_ema_msd.cli.train", "--experiment_id", job.experiment_id,
+               "--dataset", job.dataset, "--seed", str(job.seed), "--output_dir", str(output_root), "--require_cuda", "--no_test",
+               "--wandb_project", config["wandb_project"]]
+    if config.get("wandb_entity"):
+        command.extend(["--wandb_entity", config["wandb_entity"]])
+    for name, flag in {"epochs": "--epochs", "eval_steps": "--eval_steps", "patience": "--patience", "lr": "--lr",
+                       "weight_decay": "--weight_decay", "warmup_ratio": "--warmup_ratio", "label_smoothing": "--label_smoothing",
+                       "dropout": "--dropout", "physical_batch_size": "--physical_batch_size", "grad_accum": "--grad_accum"}.items():
+        command.extend([flag, str(config[name])])
+    return command
+
+
+def run_logged(command: list[str], cwd: pathlib.Path, log_path: pathlib.Path) -> None:
+    """Keep a live log and stop the child when the notebook cell is interrupted."""
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with log_path.open("w", encoding="utf-8") as log:
+        process = subprocess.Popen(command, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+        try:
+            for line in process.stdout:
+                print(line, end="", flush=True)
+                log.write(line)
+                log.flush()
+            if process.wait() != 0:
+                raise RuntimeError(f"Training failed; inspect {log_path}")
+        finally:
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=15)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+
+
+def validate_run(result: dict, job: MatrixJob) -> None:
+    if (result.get("dataset"), result.get("experiment_id"), result.get("seed")) != (job.dataset, job.experiment_id, job.seed):
+        raise ValueError("Result does not belong to this job")
+    hparams = result["hparams"]
+    if hparams.get("train_precision") != "bf16" or hparams.get("fp32_eval") is not True:
+        raise ValueError("Result precision is not BF16 train / FP32 eval")
+    if hparams["max_length"] != DATASET_MAX_LENGTHS[job.dataset]:
+        raise ValueError("Result max_length violates dataset contract")
+    if result.get("test") is not None or result.get("test_evaluations") != 0:
+        raise ValueError("This multi-seed batch must keep test locked")
+
+
+def publish_run(run_dir: pathlib.Path, repo: pathlib.Path, job: MatrixJob, config: dict, batch_manifest: dict) -> dict:
+    """Upload the selected weights and verify every file at an immutable revision."""
+    import wandb
+    result = json.loads((run_dir / "result.json").read_text(encoding="utf-8"))
+    validate_run(result, job)
+    frame = pd.read_csv(run_dir / "dev_predictions.csv", dtype={"sample_id": str})
+    dev_rows = read_jsonl(repo / DATA_DIRS[job.dataset] / "dev.jsonl")
+    validate_predictions(frame, [str(row["id"]) for row in dev_rows])
+    if frame["gold_label"].tolist() != [row["label"] for row in dev_rows]:
+        raise ValueError("Prediction gold labels differ from the pinned dev split")
+    if not result.get("wandb_run_path"):
+        raise RuntimeError("Missing queryable W&B run; refusing to mark this run complete")
+    tracked = wandb.Api().run(result["wandb_run_path"])
+    if tracked.state != "finished":
+        raise RuntimeError(f"W&B run is not finished: {tracked.state}")
+    repo_id = f"{config['hf_namespace']}/{config['hf_prefix']}-{job.dataset}-{job.experiment_id.lower().replace('_', '-')}-seed{job.seed}"
+    metadata = {**result, "git_sha": batch_manifest["git_sha"], "model_revision": MODEL_REVISION,
+                "data_fingerprints": batch_manifest["data_fingerprints"][job.dataset], "target_test_accessed": False,
+                "batch_manifest_sha256": manifest_digest(batch_manifest)}
+    from gated_dual_ema_msd.training.r2_runtime import environment_metadata
+    metadata["environment"] = environment_metadata()
+    with tempfile.TemporaryDirectory(prefix="nli-publish-", dir=run_dir) as temporary:
+        temporary = pathlib.Path(temporary)
+        checkpoint = temporary / "checkpoint"
+        checkpoint.mkdir()
+        shutil.copy2(run_dir / "best_model.pt", checkpoint / "pytorch_model.bin")
+        AutoTokenizer.from_pretrained(MODEL_NAME, revision=MODEL_REVISION).save_pretrained(checkpoint)
+        AutoConfig.from_pretrained(MODEL_NAME, revision=MODEL_REVISION).save_pretrained(checkpoint)
+        write_json(checkpoint / "model_identity.json", {"experiment": result["hparams"]["model_configuration"],
+                   "selected_weight_source": result["selected_weight_source"], "model_name": MODEL_NAME,
+                   "model_revision": MODEL_REVISION, "label_order": ["E", "C", "N"]})
+        hf_config = {"hf_hub": {"enabled": True, "repo_id": repo_id, "private": config["hf_private"],
+                                "readback_cache_dir": str(temporary / "readback")}}
+        repo_id, revision = push_run_artifacts(hf_config, checkpoint, {f"{job.dataset}_dev": run_dir / "dev_predictions.csv"}, metadata)
+    if not re.fullmatch(r"[0-9a-f]{40}", revision):
+        raise RuntimeError("HF did not return an immutable commit SHA")
+    tracked.summary["hf_repo_id"] = repo_id
+    tracked.summary["hf_revision"] = revision
+    tracked.summary["source_git_sha"] = batch_manifest["git_sha"]
+    tracked.summary["artifact_readback_verified"] = True
+    tracked.summary.update()
+    refreshed = wandb.Api().run(result["wandb_run_path"])
+    if refreshed.summary.get("hf_revision") != revision:
+        raise RuntimeError("W&B immutable HF revision read-back mismatch")
+    result.update(hf_repo_id=repo_id, hf_revision=revision, artifact_readback_verified=True,
+                  batch_manifest_sha256=manifest_digest(batch_manifest), git_sha=batch_manifest["git_sha"])
+    write_json(run_dir / "result.json", result)
+    return result
+
+
+def run_batch(jobs: list[MatrixJob], repo: pathlib.Path, work_root: pathlib.Path, output_root: pathlib.Path,
+              config: dict, batch_manifest: dict) -> None:
+    signature = bind_manifest(output_root, batch_manifest)
+    work_root.mkdir(parents=True, exist_ok=True)
+    bind_manifest(work_root, batch_manifest)
+    for index, job in enumerate(jobs, 1):
+        stored_dir = job.output_dir(output_root)
+        marker = stored_dir / "verified_run.json"
+        if marker.exists():
+            previous = json.loads(marker.read_text(encoding="utf-8"))
+            if (previous.get("batch_manifest_sha256") != signature
+                    or not previous.get("artifact_readback_verified")
+                    or not re.fullmatch(r"[0-9a-f]{40}", previous.get("hf_revision", ""))):
+                raise ValueError(f"Invalid resume marker: {marker}")
+            validate_run(previous, job)
+            print(f"[{index}/{len(jobs)}] SKIP verified {job.run_name}", flush=True)
+            continue
+        run_dir = job.output_dir(work_root)
+        run_dir.mkdir(parents=True, exist_ok=True)
+        print(f"[{index}/{len(jobs)}] RUN {job.run_name}", flush=True)
+        write_json(output_root / "progress.json", {"state": "training", "job": job.run_name, "index": index, "total": len(jobs)})
+        if not (run_dir / "result.json").exists():
+            run_logged(train_command(job, config, work_root), repo, stored_dir / "worker.log")
+        write_json(output_root / "progress.json", {"state": "artifact_upload", "job": job.run_name, "index": index, "total": len(jobs)})
+        result = publish_run(run_dir, repo, job, config, batch_manifest)
+        stored_dir.mkdir(parents=True, exist_ok=True)
+        for path in run_dir.iterdir():
+            if path.is_file() and path.suffix in (".csv", ".json", ".log"):
+                shutil.copy2(path, stored_dir / path.name)
+        write_json(marker, result)
+        write_summaries(output_root)
+        # Only our local generated checkpoint copies are removed after complete
+        # HF read-back. HF remains the source of truth; Drive stores the ledger.
+        if not config.get("keep_local_checkpoints", False):
+            for name in ("best_model.pt", "best_current_model.pt", "pytorch_model.bin"):
+                (run_dir / name).unlink(missing_ok=True)
+    write_summaries(output_root)
+    write_json(output_root / "progress.json", {"state": "complete", "total": len(jobs)})

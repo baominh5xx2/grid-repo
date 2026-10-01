@@ -77,7 +77,7 @@ def build_jobs(cohort: str, datasets: Sequence[str]) -> List[MatrixJob]:
             for experiment_id in MAIN_EXPERIMENTS
             for seed in (2024, 3407)
         ]
-    elif cohort == "all":
+    elif cohort in ("all", "multiseed"):
         tuples = iter_matrix(datasets=datasets, experiment_ids=EXPERIMENTS)
     else:
         raise ValueError(f"Unsupported cohort={cohort!r}")
@@ -527,7 +527,7 @@ def run_jobs_parallel(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run the canonical experiment matrix")
     parser.add_argument(
-        "--cohort", choices=["signal", "seed42", "robustness", "all"], default="signal"
+        "--cohort", choices=["signal", "seed42", "robustness", "all", "multiseed"], default="signal"
     )
     parser.add_argument(
         "--datasets", nargs="+", choices=list(DATASET_MAX_LENGTHS), default=["vianli"]

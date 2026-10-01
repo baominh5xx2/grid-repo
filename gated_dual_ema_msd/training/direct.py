@@ -793,6 +793,10 @@ class DirectTrainer:
             "checkpoint": str(best_path),
             "current_checkpoint": str(best_current_path),
             "hparams": hparams,
+            "wandb_run_path": (
+                wandb_tracker.run.path
+                if wandb_tracker.run is not None else None
+            ),
         }
         result_path = self.output_dir / "result.json"
         result_path.write_text(

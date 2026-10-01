@@ -89,11 +89,12 @@ def directory_manifest(directory: pathlib.Path) -> dict[str, dict]:
 
 
 def _readback_verify(repo_id: str, revision: str, expected_metadata: dict,
-                     pred_paths: dict[str, pathlib.Path], checkpoint_manifest: dict) -> None:
+                     pred_paths: dict[str, pathlib.Path], checkpoint_manifest: dict,
+                     cache_dir: str | None = None) -> None:
     token = os.environ["HF_TOKEN"]
     meta_path = pathlib.Path(hf_hub_download(
         repo_id=repo_id, repo_type="model", filename="run_metadata.json",
-        revision=revision, token=token,
+        revision=revision, token=token, cache_dir=cache_dir,
     ))
     readback = json.loads(meta_path.read_text(encoding="utf-8"))
     if readback != expected_metadata:
@@ -112,14 +113,14 @@ def _readback_verify(repo_id: str, revision: str, expected_metadata: dict,
     for relative_path, expected in checkpoint_manifest.items():
         remote = pathlib.Path(hf_hub_download(
             repo_id=repo_id, repo_type="model",
-            filename=f"stage2_checkpoint/{relative_path}", revision=revision, token=token,
+            filename=f"stage2_checkpoint/{relative_path}", revision=revision, token=token, cache_dir=cache_dir,
         ))
         if remote.stat().st_size != expected["size_bytes"] or sha256_file(remote) != expected["sha256"]:
             raise RuntimeError(f"HF checkpoint read-back mismatch: {relative_path}")
     for split, local_path in pred_paths.items():
         remote = pathlib.Path(hf_hub_download(
             repo_id=repo_id, repo_type="model", filename=f"predictions/{local_path.name}",
-            revision=revision, token=token,
+            revision=revision, token=token, cache_dir=cache_dir,
         ))
         if sha256_file(remote) != sha256_file(local_path):
             raise RuntimeError(f"HF read-back hash mismatch for {split} predictions")
@@ -194,7 +195,8 @@ def push_run_artifacts(cfg: dict, checkpoint_dir: pathlib.Path, pred_paths: dict
     if tagged_sha != final_revision:
         raise RuntimeError(f"HF tag {version_tag} resolved to stale revision {tagged_sha}")
     _readback_verify(
-        repo_id, final_revision, final_metadata, normalized_preds, checkpoint_manifest
+        repo_id, final_revision, final_metadata, normalized_preds, checkpoint_manifest,
+        cache_dir=hf_cfg.get("readback_cache_dir"),
     )
     run_metadata.update(final_metadata)
     print(f"[hf_hub] verified artifact {repo_id}@{final_revision} (tag {version_tag})")
