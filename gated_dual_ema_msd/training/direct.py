@@ -1,8 +1,8 @@
 """Direct, single-stage trainer for the baseline/ablation experiment matrix.
 
 The trainer selects checkpoints exclusively by validation Macro-F1, evaluates
-current and EMA weights separately, preserves FP32 evaluation, and exposes test
-evaluation only through an explicit frozen-final switch in the calling CLI.
+current and EMA weights separately and preserves FP32 evaluation. Test access
+requires an explicit frozen-final or clearly labelled exploratory CLI mode.
 """
 from __future__ import annotations
 
@@ -393,6 +393,7 @@ class DirectTrainer:
         ema_start_step: int = 100,
         bf16: bool = True,
         evaluate_test: bool = False,
+        test_peak_exploratory: bool = False,
         use_wandb: bool = False,
         wandb_project: str = "gated-dual-ema-msd",
         wandb_entity: Optional[str] = None,
@@ -430,6 +431,9 @@ class DirectTrainer:
         self.max_grad_norm = float(max_grad_norm)
         self.bf16 = bf16_enabled(self.device, requested=bf16)
         self.evaluate_test = bool(evaluate_test)
+        self.test_peak_exploratory = bool(test_peak_exploratory)
+        if self.test_peak_exploratory and not self.evaluate_test:
+            raise ValueError("Exploratory test scans require explicit test access")
         self.use_ema = bool(use_ema)
         self.ema_decay = float(ema_decay)
         self.ema_start_step = int(ema_start_step)
@@ -521,6 +525,7 @@ class DirectTrainer:
             "ema_decay": self.ema_decay,
             "ema_start_step": self.ema_start_step,
             "test_access_enabled": self.evaluate_test,
+            "test_peak_exploratory": self.test_peak_exploratory,
             "train_samples": len(train_rows),
             "dev_samples": len(dev_rows),
             "test_samples": len(test_rows or []),
@@ -580,6 +585,11 @@ class DirectTrainer:
 
         best_path = self.output_dir / "best_model.pt"
         best_current_path = self.output_dir / "best_current_model.pt"
+        peak_test_path = self.output_dir / "best_test_model.pt"
+        peak_test_metrics = None
+        peak_test_step = None
+        test_curve = []
+        test_evaluations = 0
         log_file = self.output_dir / "train.log"
         dev_selection = DevSelection(patience=self.patience, mode="max")
         optimizer_step = 0
@@ -677,6 +687,12 @@ class DirectTrainer:
                     )
                 wandb_tracker.log_step(log_values, step=optimizer_step)
 
+                # Dense evaluation may precede EMA's first update. Track current
+                # dev diagnostics, but M3/M2 selection must use active EMA weights.
+                if self.use_ema and ema_metrics is None:
+                    print(f"[{run_name}] Step {optimizer_step}: dev diagnostic only; waiting for EMA at step {self.ema_start_step}", flush=True)
+                    continue
+
                 improved = dev_selection.observe(
                     selected_metrics["macro_f1"],
                     optimizer_step,
@@ -690,6 +706,27 @@ class DirectTrainer:
                     status = "NEW DEV BEST"
                 else:
                     status = f"no-imp ({dev_selection.no_improve}/{self.patience})"
+
+                if self.test_peak_exploratory:
+                    with ema_weights(self.model, ema_tracker if selected_source == "ema" else None):
+                        scan_metrics, scan_frame = evaluate_model(
+                            self.model, test_rows, self.tokenizer, self.device,
+                            self.max_length, self.physical_batch_size * 2,
+                        )
+                        test_evaluations += 1
+                        if peak_test_metrics is None or scan_metrics["macro_f1"] > peak_test_metrics["macro_f1"]:
+                            peak_test_metrics = dict(scan_metrics)
+                            peak_test_step = optimizer_step
+                            torch.save(self.model.state_dict(), peak_test_path)
+                            scan_frame.to_csv(self.output_dir / "test_predictions_peak.csv", index=False)
+                    test_curve.append({"optimizer_step": optimizer_step, "epoch": epoch,
+                                       "weight_source": selected_source, "test_macro_f1": scan_metrics["macro_f1"],
+                                       "test_accuracy": scan_metrics["accuracy"], "dev_macro_f1": selected_metrics["macro_f1"]})
+                    pd.DataFrame(test_curve).to_csv(self.output_dir / "test_curve.csv", index=False)
+                    wandb_tracker.log_step({"exploratory/test_macro_f1": scan_metrics["macro_f1"],
+                                            "exploratory/peak_test_macro_f1": peak_test_metrics["macro_f1"],
+                                            "exploratory/peak_test_step": peak_test_step}, step=optimizer_step)
+                    print(f"[{run_name}] EXPLORATORY TEST step={optimizer_step} f1={scan_metrics['macro_f1']:.4f} peak={peak_test_metrics['macro_f1']:.4f} at step={peak_test_step}", flush=True)
 
                 log_line = (
                     f"[{run_name}] Ep {epoch}/{self.max_epochs} | Step {optimizer_step:4d}/{total_steps} | "
@@ -750,6 +787,7 @@ class DirectTrainer:
             test_selected_frame.to_csv(
                 self.output_dir / "test_predictions.csv", index=False
             )
+            test_evaluations += 1
         test_confusion = (
             save_confusion_matrix(
                 test_selected_frame, self.output_dir / "test_confusion_matrix.csv"
@@ -774,11 +812,14 @@ class DirectTrainer:
             "test": test_selected,
             "test_current": None,
             "test_ema": test_selected if dev_selection.weight_source == "ema" else None,
-            "peak_test_macro_f1": None,
-            "peak_test_step": None,
-            "peak_test_checkpoint": None,
+            "peak_test_macro_f1": peak_test_metrics["macro_f1"] if peak_test_metrics else None,
+            "peak_test_step": peak_test_step,
+            "peak_test_checkpoint": str(peak_test_path) if peak_test_metrics else None,
+            "peak_test_metrics": peak_test_metrics,
+            "test_peak_exploratory": self.test_peak_exploratory,
+            "test_selection_policy": "exploratory_test_macro_f1" if self.test_peak_exploratory else None,
             "selection_policy": "dev_macro_f1",
-            "test_evaluations": 1 if test_selected is not None else 0,
+            "test_evaluations": test_evaluations,
             "schema_version": 2,
             "dev_confusion_matrix": dev_confusion,
             "test_confusion_matrix": test_confusion,

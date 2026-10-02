@@ -56,16 +56,51 @@ Open [bf16_multiseed_main_method.ipynb in Colab](https://colab.research.google.c
 The notebook runs **M3_FULL × 3 datasets × seeds 42/2024/3407 = 9 runs**.
 M3_FULL is Gated-Dual CafeBERT with Multi-Sample Dropout and EMA.
 The first cell controls datasets, seeds and hyperparameters. Add
-`HF_TOKEN` and `WANDB_API_KEY` in Colab Secrets, select a BF16-capable CUDA GPU,
+`GITHUB_TOKEN`, `HF_TOKEN` and `WANDB_API_KEY` in Colab Secrets, select a BF16-capable CUDA GPU,
 and run the cells in order. `HF_PRIVATE=False` is explicit in the configuration.
 
 The notebook prepares pinned datasets, verifies tracking/artifact access, and
-records an immutable source SHA and train/dev hashes. Drive holds the progress
+records an immutable source SHA and train/dev/test hashes. Drive holds the progress
 ledger and mean/std CSVs; HF holds the selected checkpoint, tokenizer/config,
-metadata and dev predictions, read back at an immutable revision. Reuse
+metadata and dev/test predictions, read back at an immutable revision. Reuse
 `RUN_GROUP` to resume completed verified runs; interrupted training starts again.
-Test stays locked. Local generated checkpoint copies are cleaned after HF
+The notebook now defaults to the explicitly requested **test-aware exploratory**
+mode: dev/test evaluation every **50 optimizer steps** after EMA starts at step
+100, a test curve, and a separate peak-test checkpoint. Dev still selects
+`best_model.pt` and controls early stopping; `best_test_model.pt` stores the
+exploratory peak. Both checkpoints and their predictions are verified on HF.
+`exploratory_test_summary.csv` labels the test-aware scores separately.
+To use the independent **frozen-final** protocol, set `TEST_PEAK_EXPLORATORY=False`,
+`FROZEN_FINAL=True`, and a fresh `RUN_GROUP`: only the dev-selected checkpoint is
+tested once, with no test-peak selection.
+Patience remains 5 evaluations; maximum epochs remain 7. Local generated checkpoint copies are cleaned after HF
 verification to keep runtime disk usage bounded.
+
+The paper's M3 architecture and main optimizer settings match. This run uses BF16
+instead of the paper's FP16, a 50-step instead of 100-step eval interval, and the
+approved cleaned training sets (ViANLI 8,010 vs 8,012; ViMedNLI 11,217 vs 11,232).
+See [the config audit](docs/paper_m3_bf16_audit.md) for the comparison and the
+24-layer CafeBERT correction to the paper's Figure 1.
+
+### GitHub authentication on Colab
+
+[Create a fine-grained read token](https://github.com/settings/personal-access-tokens/new?name=grid-colab-read&target_name=baominh5xx2&expires_in=30&contents=read).
+Choose resource owner `baominh5xx2`, **Only select repositories → grid-repo**, and
+**Contents: Read-only**. Save the token under **Colab Secrets → GITHUB_TOKEN** and
+enable notebook access. GitHub documents these settings in
+[Managing personal access tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
+
+The access cell runs before clone/install. It verifies repository identity and
+uses a temporary Git askpass helper; no token is embedded in URLs, command
+arguments, Git config, notebook output or Drive manifests. Clone/fetch verifies
+actual Git read access and freezes the exact source commit. If the repository is
+public, a token is optional. A missing token for a private repo triggers a hidden
+prompt; an invalid supplied token fails without falling back to public access.
+If Colab cannot open the private GitHub notebook link, download this `.ipynb` and
+use **File → Upload notebook**, then run its GitHub access cell.
+
+Authentication with your real token will be verified on Colab when you add it;
+the local auth tests use synthetic credentials and mocked HTTP responses.
 
 ## Source layout
 

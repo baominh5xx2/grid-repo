@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import pathlib
 import re
 import shutil
@@ -22,6 +23,7 @@ from gated_dual_ema_msd.training.r2_runtime import sha256_file
 
 DATA_DIRS = {"vinli": "data/external/vinli", "vianli": "data/processed/vianli_clean", "vimednli": "data/external/vimednli"}
 COUNTS = {"vinli": (18282, 2255), "vianli": (8010, 1000), "vimednli": (11217, 1395)}
+TEST_COUNTS = {"vinli": 2264, "vianli": 1000, "vimednli": 1422}
 
 
 def write_json(path: pathlib.Path, value: dict) -> None:
@@ -43,8 +45,8 @@ def bind_manifest(output_root: pathlib.Path, manifest: dict) -> str:
     return manifest_digest(manifest)
 
 
-def prepare_data(repo: pathlib.Path, datasets: list[str]) -> dict:
-    """Materialize pinned data once and bind train/dev hashes; never evaluate test."""
+def prepare_data(repo: pathlib.Path, datasets: list[str], *, frozen_final: bool = False) -> dict:
+    """Bind pinned data; include test provenance only for the approved final path."""
     from gated_dual_ema_msd.operations import prepare_vianli, prepare_vinli_multisource, prepare_vimednli_multisource
     for dataset in datasets:
         directory = repo / DATA_DIRS[dataset]
@@ -63,7 +65,10 @@ def prepare_data(repo: pathlib.Path, datasets: list[str]) -> dict:
             raise ValueError(f"Pinned data revision mismatch: {dataset}")
         metadata = manifest.get("clean_splits", manifest.get("splits"))
         splits = {}
-        for split, expected_count in zip(("train", "dev"), COUNTS[dataset]):
+        expected_splits = dict(zip(("train", "dev"), COUNTS[dataset]))
+        if frozen_final:
+            expected_splits["test"] = TEST_COUNTS[dataset]
+        for split, expected_count in expected_splits.items():
             path = directory / f"{split}.jsonl"
             records = read_jsonl(path)
             ids = [str(row["id"]) for row in records]
@@ -80,8 +85,12 @@ def prepare_data(repo: pathlib.Path, datasets: list[str]) -> dict:
 
 
 def train_command(job: MatrixJob, config: dict, output_root: pathlib.Path) -> list[str]:
+    if config.get("test_peak_exploratory", False) and config.get("frozen_final", False):
+        raise ValueError("Exploratory test scans and frozen-final are separate protocols")
     command = [sys.executable, "-u", "-m", "gated_dual_ema_msd.cli.train", "--experiment_id", job.experiment_id,
-               "--dataset", job.dataset, "--seed", str(job.seed), "--output_dir", str(output_root), "--require_cuda", "--no_test",
+               "--dataset", job.dataset, "--seed", str(job.seed), "--output_dir", str(output_root), "--require_cuda",
+               "--test_peak_exploratory" if config.get("test_peak_exploratory", False) else
+               ("--frozen_final" if config.get("frozen_final", False) else "--no_test"),
                "--wandb_project", config["wandb_project"]]
     if config.get("wandb_entity"):
         command.extend(["--wandb_entity", config["wandb_entity"]])
@@ -89,6 +98,9 @@ def train_command(job: MatrixJob, config: dict, output_root: pathlib.Path) -> li
                        "weight_decay": "--weight_decay", "warmup_ratio": "--warmup_ratio", "label_smoothing": "--label_smoothing",
                        "dropout": "--dropout", "physical_batch_size": "--physical_batch_size", "grad_accum": "--grad_accum"}.items():
         command.extend([flag, str(config[name])])
+    for name in ("ema_decay", "ema_start_step"):
+        if name in config:
+            command.extend(["--" + name, str(config[name])])
     return command
 
 
@@ -114,7 +126,7 @@ def run_logged(command: list[str], cwd: pathlib.Path, log_path: pathlib.Path) ->
                     process.wait()
 
 
-def validate_run(result: dict, job: MatrixJob) -> None:
+def validate_run(result: dict, job: MatrixJob, *, frozen_final: bool = False, test_peak_exploratory: bool = False) -> None:
     if (result.get("dataset"), result.get("experiment_id"), result.get("seed")) != (job.dataset, job.experiment_id, job.seed):
         raise ValueError("Result does not belong to this job")
     hparams = result["hparams"]
@@ -122,7 +134,27 @@ def validate_run(result: dict, job: MatrixJob) -> None:
         raise ValueError("Result precision is not BF16 train / FP32 eval")
     if hparams["max_length"] != DATASET_MAX_LENGTHS[job.dataset]:
         raise ValueError("Result max_length violates dataset contract")
-    if result.get("test") is not None or result.get("test_evaluations") != 0:
+    if test_peak_exploratory:
+        if frozen_final or result.get("test_peak_exploratory") is not True or result.get("test_selection_policy") != "exploratory_test_macro_f1":
+            raise ValueError("Test-peak runs must be explicitly marked exploratory")
+        if (result.get("selection_policy") != "dev_macro_f1" or result.get("test_evaluations", 0) < 2
+                or not result.get("peak_test_checkpoint") or not isinstance(result.get("peak_test_step"), int)
+                or result["peak_test_step"] < 1):
+            raise ValueError("Exploratory peak checkpoint/step/evaluations are missing")
+        peak = result.get("peak_test_macro_f1")
+        if not isinstance(peak, (int, float)) or not math.isfinite(peak) or not 0 <= peak <= 1:
+            raise ValueError("Invalid exploratory peak metric")
+    elif frozen_final:
+        if (result.get("selection_policy") != "dev_macro_f1" or result.get("test_evaluations") != 1
+                or result.get("test_peak_exploratory", False)):
+            raise ValueError("Frozen-final requires dev selection and exactly one test evaluation")
+        metrics = result.get("test")
+        if not isinstance(metrics, dict) or any(not isinstance(metrics.get(key), (float, int))
+                or not math.isfinite(metrics[key]) or not 0 <= metrics[key] <= 1 for key in ("macro_f1", "accuracy")):
+            raise ValueError("Frozen-final test metrics are missing or invalid")
+        if any(result.get(key) is not None for key in ("peak_test_step", "peak_test_macro_f1", "peak_test_checkpoint")):
+            raise ValueError("Test-based checkpoint selection is forbidden")
+    elif result.get("test") is not None or result.get("test_evaluations") != 0:
         raise ValueError("This multi-seed batch must keep test locked")
 
 
@@ -130,12 +162,35 @@ def publish_run(run_dir: pathlib.Path, repo: pathlib.Path, job: MatrixJob, confi
     """Upload the selected weights and verify every file at an immutable revision."""
     import wandb
     result = json.loads((run_dir / "result.json").read_text(encoding="utf-8"))
-    validate_run(result, job)
-    frame = pd.read_csv(run_dir / "dev_predictions.csv", dtype={"sample_id": str})
-    dev_rows = read_jsonl(repo / DATA_DIRS[job.dataset] / "dev.jsonl")
-    validate_predictions(frame, [str(row["id"]) for row in dev_rows])
-    if frame["gold_label"].tolist() != [row["label"] for row in dev_rows]:
-        raise ValueError("Prediction gold labels differ from the pinned dev split")
+    frozen_final = bool(config.get("frozen_final", False))
+    exploratory = bool(config.get("test_peak_exploratory", False))
+    validate_run(result, job, frozen_final=frozen_final, test_peak_exploratory=exploratory)
+    prediction_paths = {}
+    split_outputs = [("dev", "dev_predictions.csv")]
+    if frozen_final or exploratory:
+        split_outputs.append(("test", "test_predictions.csv"))
+    if exploratory:
+        split_outputs.append(("test", "test_predictions_peak.csv"))
+    for split, filename in split_outputs:
+        prediction_path = run_dir / filename
+        frame = pd.read_csv(prediction_path, dtype={"sample_id": str})
+        split_path = repo / DATA_DIRS[job.dataset] / f"{split}.jsonl"
+        expected_split = batch_manifest["data_fingerprints"][job.dataset]["splits"][split]
+        if sha256_file(split_path) != expected_split["sha256"]:
+            raise ValueError(f"Prepared data changed since protocol freeze: {job.dataset}/{split}")
+        rows = read_jsonl(split_path)
+        validate_predictions(frame, [str(row["id"]) for row in rows])
+        if frame["gold_label"].tolist() != [row["label"] for row in rows]:
+            raise ValueError(f"Prediction gold labels differ from the pinned {split} split")
+        key = f"{job.dataset}_{split}" + ("_exploratory_peak" if filename == "test_predictions_peak.csv" else "")
+        prediction_paths[key] = prediction_path
+    if exploratory:
+        curve = pd.read_csv(run_dir / "test_curve.csv")
+        if len(curve) != result["test_evaluations"] - 1 or curve.empty:
+            raise ValueError("Exploratory test curve/evaluation count mismatch")
+        best = curve.loc[curve["test_macro_f1"].idxmax()]
+        if int(best["optimizer_step"]) != result["peak_test_step"] or not math.isclose(float(best["test_macro_f1"]), result["peak_test_macro_f1"]):
+            raise ValueError("Exploratory peak differs from recorded test curve")
     if not result.get("wandb_run_path"):
         raise RuntimeError("Missing queryable W&B run; refusing to mark this run complete")
     tracked = wandb.Api().run(result["wandb_run_path"])
@@ -143,7 +198,8 @@ def publish_run(run_dir: pathlib.Path, repo: pathlib.Path, job: MatrixJob, confi
         raise RuntimeError(f"W&B run is not finished: {tracked.state}")
     repo_id = f"{config['hf_namespace']}/{config['hf_prefix']}-{job.dataset}-{job.experiment_id.lower().replace('_', '-')}-seed{job.seed}"
     metadata = {**result, "git_sha": batch_manifest["git_sha"], "model_revision": MODEL_REVISION,
-                "data_fingerprints": batch_manifest["data_fingerprints"][job.dataset], "target_test_accessed": False,
+                "data_fingerprints": batch_manifest["data_fingerprints"][job.dataset], "target_test_accessed": frozen_final or exploratory,
+                "protocol": batch_manifest.get("protocol"), "paper_differences": batch_manifest.get("paper_differences"),
                 "batch_manifest_sha256": manifest_digest(batch_manifest)}
     from gated_dual_ema_msd.training.r2_runtime import environment_metadata
     metadata["environment"] = environment_metadata()
@@ -152,26 +208,39 @@ def publish_run(run_dir: pathlib.Path, repo: pathlib.Path, job: MatrixJob, confi
         checkpoint = temporary / "checkpoint"
         checkpoint.mkdir()
         shutil.copy2(run_dir / "best_model.pt", checkpoint / "pytorch_model.bin")
+        if exploratory:
+            shutil.copy2(run_dir / "best_test_model.pt", checkpoint / "exploratory_best_test_model.pt")
+            shutil.copy2(run_dir / "test_curve.csv", checkpoint / "exploratory_test_curve.csv")
         AutoTokenizer.from_pretrained(MODEL_NAME, revision=MODEL_REVISION).save_pretrained(checkpoint)
         AutoConfig.from_pretrained(MODEL_NAME, revision=MODEL_REVISION).save_pretrained(checkpoint)
         write_json(checkpoint / "model_identity.json", {"experiment": result["hparams"]["model_configuration"],
                    "selected_weight_source": result["selected_weight_source"], "model_name": MODEL_NAME,
-                   "model_revision": MODEL_REVISION, "label_order": ["E", "C", "N"]})
+                   "model_revision": MODEL_REVISION, "label_order": ["E", "C", "N"],
+                   "test_peak_exploratory": exploratory,
+                   "exploratory_peak_weights": "exploratory_best_test_model.pt" if exploratory else None})
         hf_config = {"hf_hub": {"enabled": True, "repo_id": repo_id, "private": config["hf_private"],
                                 "readback_cache_dir": str(temporary / "readback")}}
-        repo_id, revision = push_run_artifacts(hf_config, checkpoint, {f"{job.dataset}_dev": run_dir / "dev_predictions.csv"}, metadata)
+        repo_id, revision = push_run_artifacts(hf_config, checkpoint, prediction_paths, metadata)
     if not re.fullmatch(r"[0-9a-f]{40}", revision):
         raise RuntimeError("HF did not return an immutable commit SHA")
     tracked.summary["hf_repo_id"] = repo_id
     tracked.summary["hf_revision"] = revision
     tracked.summary["source_git_sha"] = batch_manifest["git_sha"]
     tracked.summary["artifact_readback_verified"] = True
+    tracked.summary["test_evaluations"] = result["test_evaluations"]
+    tracked.summary["selection_policy"] = result["selection_policy"]
+    tracked.summary["test_peak_exploratory"] = exploratory
+    if exploratory:
+        tracked.summary["exploratory_peak_test_step"] = result["peak_test_step"]
+        tracked.summary["exploratory_peak_test_macro_f1"] = result["peak_test_macro_f1"]
     tracked.summary.update()
     refreshed = wandb.Api().run(result["wandb_run_path"])
     if refreshed.summary.get("hf_revision") != revision:
         raise RuntimeError("W&B immutable HF revision read-back mismatch")
     result.update(hf_repo_id=repo_id, hf_revision=revision, artifact_readback_verified=True,
-                  batch_manifest_sha256=manifest_digest(batch_manifest), git_sha=batch_manifest["git_sha"])
+                  batch_manifest_sha256=manifest_digest(batch_manifest), git_sha=batch_manifest["git_sha"],
+                  hf_checkpoint_path="stage2_checkpoint/pytorch_model.bin",
+                  hf_exploratory_peak_checkpoint_path="stage2_checkpoint/exploratory_best_test_model.pt" if exploratory else None)
     write_json(run_dir / "result.json", result)
     return result
 
@@ -190,7 +259,8 @@ def run_batch(jobs: list[MatrixJob], repo: pathlib.Path, work_root: pathlib.Path
                     or not previous.get("artifact_readback_verified")
                     or not re.fullmatch(r"[0-9a-f]{40}", previous.get("hf_revision", ""))):
                 raise ValueError(f"Invalid resume marker: {marker}")
-            validate_run(previous, job)
+            validate_run(previous, job, frozen_final=bool(config.get("frozen_final", False)),
+                         test_peak_exploratory=bool(config.get("test_peak_exploratory", False)))
             print(f"[{index}/{len(jobs)}] SKIP verified {job.run_name}", flush=True)
             continue
         run_dir = job.output_dir(work_root)
@@ -210,7 +280,7 @@ def run_batch(jobs: list[MatrixJob], repo: pathlib.Path, work_root: pathlib.Path
         # Only our local generated checkpoint copies are removed after complete
         # HF read-back. HF remains the source of truth; Drive stores the ledger.
         if not config.get("keep_local_checkpoints", False):
-            for name in ("best_model.pt", "best_current_model.pt", "pytorch_model.bin"):
+            for name in ("best_model.pt", "best_current_model.pt", "best_test_model.pt", "pytorch_model.bin"):
                 (run_dir / name).unlink(missing_ok=True)
     write_summaries(output_root)
     write_json(output_root / "progress.json", {"state": "complete", "total": len(jobs)})

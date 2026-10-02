@@ -154,6 +154,12 @@ def collect_results(output_root: pathlib.Path) -> pd.DataFrame:
                 "dev_accuracy": _metric(result, "final_dev", "accuracy"),
                 "test_macro_f1": _metric(result, "test", "macro_f1"),
                 "test_accuracy": _metric(result, "test", "accuracy"),
+                "test_peak_exploratory": bool(result.get("test_peak_exploratory", False)),
+                "peak_test_macro_f1": result.get("peak_test_macro_f1"),
+                "peak_test_step": result.get("peak_test_step"),
+                "hf_repo_id": result.get("hf_repo_id"),
+                "hf_revision": result.get("hf_revision"),
+                "hf_exploratory_peak_checkpoint_path": result.get("hf_exploratory_peak_checkpoint_path"),
                 "elapsed_seconds": result.get("elapsed_seconds"),
                 "result_path": str(path),
             }
@@ -177,10 +183,13 @@ def write_summaries(output_root: pathlib.Path) -> None:
             test_macro_f1_mean=("test_macro_f1", "mean"),
             test_macro_f1_std=("test_macro_f1", "std"),
             test_accuracy_mean=("test_accuracy", "mean"),
+            exploratory_peak_test_f1_mean=("peak_test_macro_f1", "mean"),
+            exploratory_peak_test_f1_std=("peak_test_macro_f1", "std"),
         )
         .reset_index()
     )
-    summary.to_csv(output_root / "paper_summary.csv", index=False)
+    filename = "exploratory_test_summary.csv" if runs["test_peak_exploratory"].any() else "paper_summary.csv"
+    summary.to_csv(output_root / filename, index=False)
 
 
 def write_vianli_error_analysis(output_root: pathlib.Path) -> None:

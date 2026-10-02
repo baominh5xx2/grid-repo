@@ -12,7 +12,11 @@
     "fix missing Counter import in the existing R2 stage; verified by synthetic BF16 integration",
     "user-approved three-seed protocol for all eleven registered methods and explicit multiseed cohort",
     "add output-free BF16 Colab notebook, persistent resume manifest, pinned data preparation, verified immutable HF artifacts and W&B linkage",
-    "correct notebook scope to M3_FULL only, preserving three datasets and three seeds (9 runs)"
+    "correct notebook scope to M3_FULL only, preserving three datasets and three seeds (9 runs)",
+    "audit M3 against supplied GRIP paper, document cleaned data and pinned 24-layer encoder differences",
+    "add pre-clone GitHub token authentication via Colab Secrets and temporary secret-free askpass helper",
+    "explicit EMA parameters, dev evaluation every 50 optimizer steps; EMA-only selection from its first update",
+    "user-approved final evaluation and subsequently requested labelled exploratory test-peak scan with separate checkpoints, predictions and summaries"
   ],
   "files": [
     {
@@ -28,7 +32,7 @@
     {
       "file": "README.md",
       "origin": "generated for standalone source extraction",
-      "extracted_sha256": "4fd59df56049edc054c114cca99b41b52cdf08b08293ec403170997e06986880"
+      "extracted_sha256": "4c3385312293fce6f708e13697bc918a87da62ae31c0fff13ec0146b1602af86"
     },
     {
       "file": "configs/experiments/direct_vianli/method3_ema_smoothing.yaml",
@@ -55,6 +59,11 @@
       "extracted_sha256": "0cf8d02c3b8a52da024ce360169a7de40dded5c32a30df9b460024a5461dab7f"
     },
     {
+      "file": "docs/paper_m3_bf16_audit.md",
+      "origin": "generated for paper audit and Colab authentication",
+      "extracted_sha256": "233954b2b194f0576ddf33e2342a670d013300fdb0fbb02780b96067855614b4"
+    },
+    {
       "file": "gated_dual_ema_msd/__init__.py",
       "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\__init__.py",
       "original_sha256": "5a38fa4f34fac6c622255464abfe5e76e87ef27171d2eb9cecffaaecfa3833c5",
@@ -76,7 +85,7 @@
       "file": "gated_dual_ema_msd/cli/matrix.py",
       "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\cli\\matrix.py",
       "original_sha256": "2bd1103b353ba26c0cf7ba1cd86ab642f8216a7b72848bc40b7705c44280462d",
-      "extracted_sha256": "c3fb48bddae462fe02d146c3b2334e4762fd4ad8a014ada35a771e562a1a4e9d"
+      "extracted_sha256": "7d24ae850c485b1c4e32c44bfb3ecc0cbbac9f9586183dd085e118607fa6f616"
     },
     {
       "file": "gated_dual_ema_msd/cli/r2.py",
@@ -88,7 +97,7 @@
       "file": "gated_dual_ema_msd/cli/train.py",
       "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\cli\\train.py",
       "original_sha256": "16c2ef54be77f9ae728a8386ee0d3a3c7af45393b29e732102d6ce02f4ee88c4",
-      "extracted_sha256": "4e36c81a3bdcf81ba48b60d8e7e61eca9e237cd2a718b9e9d19dd83ce8321b18"
+      "extracted_sha256": "5b3fd1fc9a2289d08da0697bce929613b08a06c5ae168059863b9b79abd4d81b"
     },
     {
       "file": "gated_dual_ema_msd/compatibility/__init__.py",
@@ -386,7 +395,7 @@
     {
       "file": "gated_dual_ema_msd/operations/notebook_batch.py",
       "origin": "added for BF16 multi-seed notebook",
-      "extracted_sha256": "dd4e6fdf0735a6e51b0fe811821353977b1d4fb08e5428ecd7598ed05b709c1f"
+      "extracted_sha256": "4cf0afb0809e89038a3aa3dd4c73d17284891b5743b310ea00bb98bb145ad7f9"
     },
     {
       "file": "gated_dual_ema_msd/operations/prepare_vianli.py",
@@ -470,7 +479,7 @@
       "file": "gated_dual_ema_msd/training/direct.py",
       "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\direct.py",
       "original_sha256": "d5b088f9c81f79a5c9267bc7e945414bf01a8a97cc12a536e50b221cf689570b",
-      "extracted_sha256": "346e43f02e0e21916727e831566d68cdafd9a9dba2831efce5c6341de717457c"
+      "extracted_sha256": "5bdc8203eaacd962bca9f0bd4919444324d54091947bb2db590c68743f905a70"
     },
     {
       "file": "gated_dual_ema_msd/training/ema.py",
@@ -582,7 +591,7 @@
     {
       "file": "notebooks/bf16_multiseed_main_method.ipynb",
       "origin": "renamed generated notebook; corrected to main M3_FULL method only",
-      "extracted_sha256": "63803f65047b34cc3778cb1935c6ecc05fefe0200e6bbccb754ede4c6eddf130"
+      "extracted_sha256": "edc796b656e113c2a2b60fe653bb22f01b78a33620f585fe87fbdb9f1eba1b06"
     },
     {
       "file": "pyproject.toml",
@@ -602,7 +611,7 @@
     {
       "file": "scripts/build_bf16_multiseed_notebook.py",
       "origin": "added for BF16 multi-seed notebook",
-      "extracted_sha256": "6dbe81d68e7fd70875ab3cafff3a66b3c5841f964964c45c2dec742e8d85d41b"
+      "extracted_sha256": "4317a334f2b4ea859556a37e479ebbbc5df34640991bc3ec036ee5ebceb21fe5"
     },
     {
       "file": "scripts/migrate_vinli_checkpoint.py",
@@ -625,9 +634,24 @@
       "extracted_sha256": "50d33bc4e6550c121333bad3a3d2903e22d6a04f59ff37687301b76a0300875e"
     },
     {
+      "file": "tests/test_colab_bootstrap.py",
+      "origin": "generated for paper audit and Colab authentication",
+      "extracted_sha256": "ab0c87b4d94af80db1237ce9d58ba274ad99ed2765d5857b94e80af061f47818"
+    },
+    {
+      "file": "tests/test_exploratory_test_peak.py",
+      "origin": "generated for paper audit and Colab authentication",
+      "extracted_sha256": "fdf35652e52ce49b4541912554d2e3965215e8642d79791bb1e3d8fed3b6eee2"
+    },
+    {
       "file": "tests/test_notebook_batch.py",
       "origin": "added for BF16 multi-seed notebook",
-      "extracted_sha256": "65762686aab5994fe911b949d793190180dbfc86a6598a4b320aa8a76c5839d1"
+      "extracted_sha256": "87519ec8694072e3ec96d2bbf1e46f434a261e415cb7b63fb9cda66bf212435c"
+    },
+    {
+      "file": "tests/test_paper_recipe.py",
+      "origin": "generated for paper audit and Colab authentication",
+      "extracted_sha256": "0d38dc61856cfd911f1aae3ff8d4956403c6850b068b33fa90694e0d2150d704"
     },
     {
       "file": "tests/test_precision.py",

@@ -51,6 +51,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--ema_decay", type=float, default=EMA_DECAY)
     parser.add_argument("--ema_start_step", type=int, default=EMA_START_STEP)
     parser.add_argument("--output_dir", default="outputs/ablation_matrix")
+    parser.add_argument("--test_peak_exploratory", action="store_true",
+                        help="Explicit test-aware exploration: scan test at dev eval steps and save its peak separately; not paper evaluation")
     parser.add_argument(
         "--frozen_final",
         action="store_true",
@@ -90,6 +92,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> None:
     args = build_parser().parse_args(argv)
+    if args.test_peak_exploratory and (args.frozen_final or args.no_test):
+        raise ValueError("Exploratory test-peak mode cannot be combined with frozen_final or no_test")
     experiment = get_experiment(args.experiment_id)
     if args.seed not in experiment.seeds:
         raise ValueError(
@@ -102,7 +106,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         raise RuntimeError("This matrix job requires CUDA, but no CUDA device is available")
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     use_bf16 = bf16_enabled(device)
-    allow_test = allow_final_test(frozen_final=args.frozen_final, no_test=args.no_test)
+    allow_test = args.test_peak_exploratory or allow_final_test(frozen_final=args.frozen_final, no_test=args.no_test)
     data, tokenizer = load_nli_dataset(
         args.dataset,
         model_name=args.model_name,
@@ -166,6 +170,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         ema_decay=args.ema_decay,
         ema_start_step=args.ema_start_step,
         evaluate_test=allow_test,
+        test_peak_exploratory=args.test_peak_exploratory,
         use_wandb=not args.no_wandb,
         wandb_project=args.wandb_project,
         wandb_entity=args.wandb_entity,
