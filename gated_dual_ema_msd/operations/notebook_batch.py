@@ -91,9 +91,7 @@ def train_command(job: MatrixJob, config: dict, output_root: pathlib.Path) -> li
                "--dataset", job.dataset, "--seed", str(job.seed), "--output_dir", str(output_root), "--require_cuda",
                "--test_peak_exploratory" if config.get("test_peak_exploratory", False) else
                ("--frozen_final" if config.get("frozen_final", False) else "--no_test"),
-               "--wandb_project", config["wandb_project"]]
-    if config.get("wandb_entity"):
-        command.extend(["--wandb_entity", config["wandb_entity"]])
+               "--no_wandb"]
     for name, flag in {"epochs": "--epochs", "eval_steps": "--eval_steps", "patience": "--patience", "lr": "--lr",
                        "weight_decay": "--weight_decay", "warmup_ratio": "--warmup_ratio", "label_smoothing": "--label_smoothing",
                        "dropout": "--dropout", "physical_batch_size": "--physical_batch_size", "grad_accum": "--grad_accum"}.items():
@@ -160,7 +158,6 @@ def validate_run(result: dict, job: MatrixJob, *, frozen_final: bool = False, te
 
 def publish_run(run_dir: pathlib.Path, repo: pathlib.Path, job: MatrixJob, config: dict, batch_manifest: dict) -> dict:
     """Upload the selected weights and verify every file at an immutable revision."""
-    import wandb
     result = json.loads((run_dir / "result.json").read_text(encoding="utf-8"))
     frozen_final = bool(config.get("frozen_final", False))
     exploratory = bool(config.get("test_peak_exploratory", False))
@@ -191,15 +188,12 @@ def publish_run(run_dir: pathlib.Path, repo: pathlib.Path, job: MatrixJob, confi
         best = curve.loc[curve["test_macro_f1"].idxmax()]
         if int(best["optimizer_step"]) != result["peak_test_step"] or not math.isclose(float(best["test_macro_f1"]), result["peak_test_macro_f1"]):
             raise ValueError("Exploratory peak differs from recorded test curve")
-    if not result.get("wandb_run_path"):
-        raise RuntimeError("Missing queryable W&B run; refusing to mark this run complete")
-    tracked = wandb.Api().run(result["wandb_run_path"])
-    if tracked.state != "finished":
-        raise RuntimeError(f"W&B run is not finished: {tracked.state}")
     repo_id = f"{config['hf_namespace']}/{config['hf_prefix']}-{job.dataset}-{job.experiment_id.lower().replace('_', '-')}-seed{job.seed}"
     metadata = {**result, "git_sha": batch_manifest["git_sha"], "model_revision": MODEL_REVISION,
                 "data_fingerprints": batch_manifest["data_fingerprints"][job.dataset], "target_test_accessed": frozen_final or exploratory,
                 "protocol": batch_manifest.get("protocol"), "paper_differences": batch_manifest.get("paper_differences"),
+                "wandb_enabled": False, "artifact_backend": "huggingface",
+                "publication_helper_patch_git_sha": globals().get("BATCH_HELPER_PATCH_SHA"),
                 "batch_manifest_sha256": manifest_digest(batch_manifest)}
     from gated_dual_ema_msd.training.r2_runtime import environment_metadata
     metadata["environment"] = environment_metadata()
@@ -223,21 +217,9 @@ def publish_run(run_dir: pathlib.Path, repo: pathlib.Path, job: MatrixJob, confi
         repo_id, revision = push_run_artifacts(hf_config, checkpoint, prediction_paths, metadata)
     if not re.fullmatch(r"[0-9a-f]{40}", revision):
         raise RuntimeError("HF did not return an immutable commit SHA")
-    tracked.summary["hf_repo_id"] = repo_id
-    tracked.summary["hf_revision"] = revision
-    tracked.summary["source_git_sha"] = batch_manifest["git_sha"]
-    tracked.summary["artifact_readback_verified"] = True
-    tracked.summary["test_evaluations"] = result["test_evaluations"]
-    tracked.summary["selection_policy"] = result["selection_policy"]
-    tracked.summary["test_peak_exploratory"] = exploratory
-    if exploratory:
-        tracked.summary["exploratory_peak_test_step"] = result["peak_test_step"]
-        tracked.summary["exploratory_peak_test_macro_f1"] = result["peak_test_macro_f1"]
-    tracked.summary.update()
-    refreshed = wandb.Api().run(result["wandb_run_path"])
-    if refreshed.summary.get("hf_revision") != revision:
-        raise RuntimeError("W&B immutable HF revision read-back mismatch")
     result.update(hf_repo_id=repo_id, hf_revision=revision, artifact_readback_verified=True,
+                  wandb_enabled=False, artifact_backend="huggingface",
+                  publication_helper_patch_git_sha=globals().get("BATCH_HELPER_PATCH_SHA"),
                   batch_manifest_sha256=manifest_digest(batch_manifest), git_sha=batch_manifest["git_sha"],
                   hf_checkpoint_path="stage2_checkpoint/pytorch_model.bin",
                   hf_exploratory_peak_checkpoint_path="stage2_checkpoint/exploratory_best_test_model.pt" if exploratory else None)

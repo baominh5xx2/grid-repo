@@ -36,7 +36,7 @@ markdown("""
 
     Choose a CUDA GPU with BF16 support in **Runtime → Change runtime type**.
     Add `GITHUB_TOKEN` (repository Contents: read access), `HF_TOKEN`
-    (model-repo write access) and `WANDB_API_KEY` in Colab Secrets
+    (model-repo write access) in Colab Secrets. W&B is disabled.
     and enable notebook access. Run the cells in order. This batch can span several
     sessions: reuse the same `RUN_GROUP` to skip verified completed runs; an
     interrupted training run starts again from its seed. Completed weights,
@@ -57,7 +57,7 @@ code("""
     REPO_URL = "https://github.com/baominh5xx2/grid-repo.git"
     SOURCE_REF = "main"  # First session captures its SHA; resume reuses that SHA.
     REQUIRE_GITHUB_TOKEN = False  # Public clone works without it; private clone prompts if absent.
-    RUN_GROUP = "m3-full-bf16-clean-testpeak50-2026-10-03"
+    RUN_GROUP = "m3-bf16-clean-testpeak50-hf-only-2026-10-03"
     TEST_PEAK_EXPLORATORY = True  # Explicitly requested: explore test curve and save its peak.
     FROZEN_FINAL = False  # For paper protocol: set True, exploratory False, and choose a new RUN_GROUP.
     DATASETS = ["vinli", "vianli", "vimednli"]
@@ -65,8 +65,6 @@ code("""
     SEEDS = [42, 2024, 3407]
     USE_DRIVE = True
     HF_PRIVATE = False
-    WANDB_ENTITY = "trinhtrantran3105-uit"  # Change to your own accessible entity if needed.
-    WANDB_PROJECT = "gated-relation-cafebert-bf16-multiseed"
     HYPERPARAMS = dict(epochs=7, eval_steps=50, patience=5, lr=1e-5,
                       weight_decay=0.005, warmup_ratio=0.06, label_smoothing=0.02,
                   dropout=0.1, physical_batch_size=4, grad_accum=4,
@@ -230,7 +228,7 @@ code("""
 code("""
     if "_LOADED_SOURCE_SHA" in globals() and _LOADED_SOURCE_SHA != SOURCE_SHA:
         raise RuntimeError("Source SHA changed in this kernel. Restart the runtime kernel and rerun the setup cells.")
-    subprocess.run([sys.executable, "-m", "pip", "install", "-e", str(REPO_DIR) + "[tracking]"], check=True)
+    subprocess.run([sys.executable, "-m", "pip", "install", "-e", str(REPO_DIR) + "[hf]"], check=True)
     sys.path.insert(0, str(REPO_DIR))
     os.chdir(REPO_DIR)
     _LOADED_SOURCE_SHA = SOURCE_SHA
@@ -251,7 +249,7 @@ code("""
 """, "gpu-preflight")
 code("""
     from getpass import getpass
-    for key in ("HF_TOKEN", "WANDB_API_KEY"):
+    for key in ("HF_TOKEN",):
         value = os.environ.get(key)
         if not value and IN_COLAB:
             from google.colab import userdata
@@ -265,19 +263,16 @@ code("""
             raise RuntimeError(f"Missing {key}")
         os.environ[key] = value
     del value
-    os.environ["WANDB_MODE"] = "online"
-    os.environ.pop("WANDB_DISABLED", None)
-    print("HF_TOKEN and WANDB_API_KEY are present.")
+    print("HF_TOKEN is present. Artifacts and metadata use HF only.")
 """, "secrets")
 markdown("""
     ## Jobs and tracking preflight
-    One isolated train process and W&B run per dataset/method/seed. Each job gets
+    One isolated train process per dataset/method/seed. Each job gets
     its own HF model repository. The default HF visibility is public; change
     `HF_PRIVATE` in the first cell before creating the batch if desired.
 """)
 code("""
     import pandas as pd
-    import wandb
     from huggingface_hub import HfApi
     from gated_dual_ema_msd.cli.matrix import MatrixJob
     from gated_dual_ema_msd.config.experiments import EXPERIMENTS, DATASET_MAX_LENGTHS, MODEL_NAME, MODEL_REVISION
@@ -297,8 +292,7 @@ code("""
     api = HfApi(token=os.environ["HF_TOKEN"])
     HF_NAMESPACE = api.whoami()["name"]
     CONFIG = {**HYPERPARAMS, "hf_namespace": HF_NAMESPACE, "hf_prefix": RUN_GROUP,
-              "hf_private": HF_PRIVATE, "wandb_project": WANDB_PROJECT,
-              "wandb_entity": WANDB_ENTITY, "keep_local_checkpoints": False,
+              "hf_private": HF_PRIVATE, "keep_local_checkpoints": False,
               "frozen_final": FROZEN_FINAL, "test_peak_exploratory": TEST_PEAK_EXPLORATORY}
     if previous and previous["config"] != CONFIG:
         raise ValueError("Settings differ from this RUN_GROUP. Restore them or select a new RUN_GROUP.")
@@ -308,16 +302,7 @@ code("""
         api.create_repo(repo_id=repo_id, repo_type="model", private=HF_PRIVATE, exist_ok=True)
         if api.repo_info(repo_id=repo_id, repo_type="model").private != HF_PRIVATE:
             raise RuntimeError(f"HF repository visibility differs: {repo_id}")
-    preflight = wandb.init(project=WANDB_PROJECT, entity=WANDB_ENTITY,
-                          name=RUN_GROUP + "-preflight", config={"source_git_sha": SOURCE_SHA,
-                          "seeds": SEEDS, "train_precision": "bf16",
-                          "test_locked": not (FROZEN_FINAL or TEST_PEAK_EXPLORATORY),
-                          "test_peak_exploratory": TEST_PEAK_EXPLORATORY})
-    preflight_path = preflight.path
-    preflight.log({"lifecycle": "preflight_complete", "jobs": len(JOBS)})
-    preflight.finish()
-    assert wandb.Api().run(preflight_path).state == "finished"
-    print("Verified HF repository access and queryable W&B preflight:", len(JOBS), "jobs")
+    print("Verified HF repository access:", len(JOBS), "jobs; W&B disabled")
 """, "tracking-preflight")
 markdown("""
     ## Prepare pinned data and bind the protocol

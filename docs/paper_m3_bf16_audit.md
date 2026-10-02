@@ -53,7 +53,7 @@ and `test_predictions_peak.csv` hold the exploratory test maximum; `test_curve.c
 records its optimizer-step history. The dev-selected checkpoint is also tested at
 the end. All test evaluations are counted. The scan does not alter optimizer updates.
 
-Peak-test scores are labelled exploratory in CLI results, W&B, the batch manifest,
+Peak-test scores are labelled exploratory in CLI results, the batch manifest,
 HF metadata and `exploratory_test_summary.csv`. They are not an independent
 held-out test reproduction and must not be described as such. Test-aware results
 remain test-aware even if later re-evaluated once on the same test set.
@@ -63,7 +63,8 @@ For the independent frozen-final code path, set `TEST_PEAK_EXPLORATORY=False`,
 per dev-selected checkpoint and rejects test-peak metadata. The cleaned data,
 BF16 precision and 50-step eval cadence still differ from the paper recipe.
 
-GitHub stores code with a frozen commit SHA. W&B tracks configs/metrics; HF stores
+GitHub stores code with a frozen commit SHA. The user subsequently removed W&B;
+the notebook and publication pipeline now require only HF. HF stores
 the selected weights plus exploratory peak weights (when enabled), tokenizer,
 config and predictions at an immutable revision with complete file read-back.
 Drive stores resume state and tables. Existing batches refuse changed source/config.

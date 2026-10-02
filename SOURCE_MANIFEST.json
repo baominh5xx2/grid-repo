@@ -16,7 +16,8 @@
     "audit M3 against supplied GRIP paper, document cleaned data and pinned 24-layer encoder differences",
     "add pre-clone GitHub token authentication via Colab Secrets and temporary secret-free askpass helper",
     "explicit EMA parameters, dev evaluation every 50 optimizer steps; EMA-only selection from its first update",
-    "user-approved final evaluation and subsequently requested labelled exploratory test-peak scan with separate checkpoints, predictions and summaries"
+    "user-approved final evaluation and subsequently requested labelled exploratory test-peak scan with separate checkpoints, predictions and summaries",
+    "user removed W&B: HF-only notebook/preflight/publication, no_wandb batch training and pinned helper hotfix for completed Colab runs"
   ],
   "files": [
     {
@@ -32,7 +33,7 @@
     {
       "file": "README.md",
       "origin": "generated for standalone source extraction",
-      "extracted_sha256": "4c3385312293fce6f708e13697bc918a87da62ae31c0fff13ec0146b1602af86"
+      "extracted_sha256": "d41b031102d014f7fa7e94df05effe9e8e3bd6fb331c59290e88910978d7b8b1"
     },
     {
       "file": "configs/experiments/direct_vianli/method3_ema_smoothing.yaml",
@@ -59,9 +60,14 @@
       "extracted_sha256": "0cf8d02c3b8a52da024ce360169a7de40dded5c32a30df9b460024a5461dab7f"
     },
     {
+      "file": "docs/colab_hf_only_recovery.md",
+      "origin": "HF-only Colab recovery instructions",
+      "extracted_sha256": "72e81dd2db590443a7b1f84991af636b61d1ea27191effe96609512c54b40455"
+    },
+    {
       "file": "docs/paper_m3_bf16_audit.md",
       "origin": "generated for paper audit and Colab authentication",
-      "extracted_sha256": "233954b2b194f0576ddf33e2342a670d013300fdb0fbb02780b96067855614b4"
+      "extracted_sha256": "16475f246df67c98c8ed4753d76b2a25f79707bd6b4af90ea25421cf98042b5d"
     },
     {
       "file": "gated_dual_ema_msd/__init__.py",
@@ -395,7 +401,7 @@
     {
       "file": "gated_dual_ema_msd/operations/notebook_batch.py",
       "origin": "added for BF16 multi-seed notebook",
-      "extracted_sha256": "4cf0afb0809e89038a3aa3dd4c73d17284891b5743b310ea00bb98bb145ad7f9"
+      "extracted_sha256": "f941c3da1d76668f900b50e25a4d4d1658d335494ec4ee12ee035e4302cdc19a"
     },
     {
       "file": "gated_dual_ema_msd/operations/prepare_vianli.py",
@@ -591,12 +597,12 @@
     {
       "file": "notebooks/bf16_multiseed_main_method.ipynb",
       "origin": "renamed generated notebook; corrected to main M3_FULL method only",
-      "extracted_sha256": "edc796b656e113c2a2b60fe653bb22f01b78a33620f585fe87fbdb9f1eba1b06"
+      "extracted_sha256": "d1f1bb99cd37434a08c19716115d28984376c2f6eb235e0d8216b307caaae2b2"
     },
     {
       "file": "pyproject.toml",
       "origin": "generated for standalone source extraction",
-      "extracted_sha256": "324f03803607a0e37b7dc869750afe7b25505f9de4a8a2e7d766885826b0aeed"
+      "extracted_sha256": "daa97035a0312d6171af5169af37616ac0125814bccf0621748de87727384a8e"
     },
     {
       "file": "requirements.txt",
@@ -611,7 +617,7 @@
     {
       "file": "scripts/build_bf16_multiseed_notebook.py",
       "origin": "added for BF16 multi-seed notebook",
-      "extracted_sha256": "4317a334f2b4ea859556a37e479ebbbc5df34640991bc3ec036ee5ebceb21fe5"
+      "extracted_sha256": "5b264e208c07f1afa78000258f03e32be6ea5a12437c67cd5d0167876746cc5a"
     },
     {
       "file": "scripts/migrate_vinli_checkpoint.py",
@@ -641,12 +647,12 @@
     {
       "file": "tests/test_exploratory_test_peak.py",
       "origin": "generated for paper audit and Colab authentication",
-      "extracted_sha256": "fdf35652e52ce49b4541912554d2e3965215e8642d79791bb1e3d8fed3b6eee2"
+      "extracted_sha256": "c08a4b9c4807c764c86eedba0f5edb3d4691f7a9fc2c0fdb5c01a6a2a5547d22"
     },
     {
       "file": "tests/test_notebook_batch.py",
       "origin": "added for BF16 multi-seed notebook",
-      "extracted_sha256": "87519ec8694072e3ec96d2bbf1e46f434a261e415cb7b63fb9cda66bf212435c"
+      "extracted_sha256": "c81bb22bb964b704716f4027bca3a65a10d0eaaa92457f6598a09c261896afc1"
     },
     {
       "file": "tests/test_paper_recipe.py",

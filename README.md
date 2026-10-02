@@ -10,7 +10,7 @@ the dependency closure of its training/evaluation entry points.
 Python 3.10 or newer:
 
 ```sh
-python -m pip install -e ".[tracking]"
+python -m pip install -e ".[hf]"
 ```
 
 ## Run
@@ -56,7 +56,7 @@ Open [bf16_multiseed_main_method.ipynb in Colab](https://colab.research.google.c
 The notebook runs **M3_FULL × 3 datasets × seeds 42/2024/3407 = 9 runs**.
 M3_FULL is Gated-Dual CafeBERT with Multi-Sample Dropout and EMA.
 The first cell controls datasets, seeds and hyperparameters. Add
-`GITHUB_TOKEN`, `HF_TOKEN` and `WANDB_API_KEY` in Colab Secrets, select a BF16-capable CUDA GPU,
+`GITHUB_TOKEN` and `HF_TOKEN` in Colab Secrets, select a BF16-capable CUDA GPU,
 and run the cells in order. `HF_PRIVATE=False` is explicit in the configuration.
 
 The notebook prepares pinned datasets, verifies tracking/artifact access, and
@@ -115,7 +115,11 @@ the local auth tests use synthetic credentials and mocked HTTP responses.
 - `scripts/`: dataset preparation and audit entry points.
 - `configs/experiments/`: four main experiment recipes.
 
-W&B tracks metrics; Hugging Face stores scientific model artifacts.
+The notebook uses Hugging Face only: checkpoint, config, metrics, predictions and
+immutable file verification. Batch training passes `--no_wandb`; W&B is not required.
+Legacy optional tracking entry points remain available for older callers.
+For an already completed Colab run blocked on W&B, use
+[HF-only recovery](docs/colab_hf_only_recovery.md) in the existing runtime.
 Set credentials through environment variables. Dataset files and trained weights
 are downloaded/prepared separately; they are not included in this source repo.
 

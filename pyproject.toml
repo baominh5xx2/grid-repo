@@ -21,6 +21,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+hf = ["huggingface_hub>=0.21.0", "python-dotenv>=1.0.1"]
 tracking = ["wandb>=0.16.4", "huggingface_hub>=0.21.0", "python-dotenv>=1.0.1"]
 
 [project.scripts]

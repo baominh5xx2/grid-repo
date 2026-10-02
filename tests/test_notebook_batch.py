@@ -84,6 +84,7 @@ class NotebookBatchTests(unittest.TestCase):
         command = train_command(MatrixJob("vinli", "B0_CLS", 3407), config, ROOT)
         self.assertIn("--no_test", command)
         self.assertIn("--require_cuda", command)
+        self.assertIn("--no_wandb", command)
         self.assertNotIn("--frozen_final", command)
         self.assertEqual(command[command.index("--seed") + 1], "3407")
 
@@ -137,7 +138,13 @@ class NotebookBatchTests(unittest.TestCase):
             self.assertEqual(len(namespace["JOBS"]), 9)
             self.assertTrue(all(job.experiment_id == "M3_FULL" for job in namespace["JOBS"]))
             self.assertEqual(len(set(namespace["api"].created)), 9)
-            self.assertEqual(namespace["preflight_path"], "offline/project/preflight")
+            self.assertNotIn("preflight_path", namespace)
+
+    def test_notebook_does_not_import_wandb_or_require_its_secret(self):
+        notebook = json.loads((ROOT / "notebooks/bf16_multiseed_main_method.ipynb").read_text(encoding="utf-8"))
+        code = '\n'.join(''.join(cell['source']) for cell in notebook['cells'] if cell['cell_type'] == 'code')
+        self.assertNotIn('import wandb', code)
+        self.assertNotIn('WANDB_API_KEY', code)
 
     def test_hf_readback_is_immutable_and_detects_modified_weights(self):
         from gated_dual_ema_msd.tracking import hf

@@ -62,7 +62,7 @@ class ExploratoryTestPeakTests(unittest.TestCase):
                       test_peak_exploratory=True, test_evaluations=2, peak_test_step=100,
                       peak_test_macro_f1=1.0, peak_test_checkpoint="synthetic/best_test_model.pt",
                       selected_weight_source="ema", final_dev=dict(macro_f1=1.0, accuracy=1.0),
-                      test=dict(macro_f1=1.0, accuracy=1.0), wandb_run_path="offline/test/synthetic")
+                      test=dict(macro_f1=1.0, accuracy=1.0), wandb_run_path=None)
         tracked = SimpleNamespace(state="finished", summary={})
         wandb = SimpleNamespace(Api=lambda: SimpleNamespace(run=lambda path: tracked))
         with tempfile.TemporaryDirectory() as temporary:
@@ -93,10 +93,10 @@ class ExploratoryTestPeakTests(unittest.TestCase):
                 self.assertTrue(metadata['test_peak_exploratory'])
                 self.assertTrue(metadata['target_test_accessed'])
                 return 'offline/synthetic', 'b'*40
-            with patch.dict(sys.modules, {'wandb': wandb}), patch.object(batch.AutoTokenizer, 'from_pretrained', return_value=saver), patch.object(batch.AutoConfig, 'from_pretrained', return_value=saver), patch.object(batch, 'push_run_artifacts', side_effect=push):
+            with patch.dict(sys.modules, {'wandb': None}), patch.object(batch.AutoTokenizer, 'from_pretrained', return_value=saver), patch.object(batch.AutoConfig, 'from_pretrained', return_value=saver), patch.object(batch, 'push_run_artifacts', side_effect=push):
                 published = batch.publish_run(run_dir, root, job, config, manifest)
             self.assertTrue(published['artifact_readback_verified'])
-            self.assertTrue(tracked.summary['test_peak_exploratory'])
+            self.assertFalse(published['wandb_enabled'])
             write_summaries(root/'results')
             self.assertTrue((root/'results/exploratory_test_summary.csv').exists())
             self.assertFalse((root/'results/paper_summary.csv').exists())
