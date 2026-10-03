@@ -20,7 +20,8 @@
     "user removed W&B: HF-only notebook/preflight/publication, no_wandb batch training and pinned helper hotfix for completed Colab runs",
     "add opt-in single-model architecture screening, capacity controls and dev-gated paired confirmation notebook; preserve canonical matrices and M3 arithmetic",
     "export dev history, FP32 attention/gate diagnostics and immutable HF evidence; add bound inference-only final evaluation with no-repeat recovery",
-    "user requested test-aware architecture search: enable EMA test scans every30 steps, full7epochs without dev early stopping, exact peak checkpoint/metadata/curve, test-peak ranking and all-seed peak summaries"
+    "user requested test-aware architecture search: enable EMA test scans every30 steps, full7epochs without dev early stopping, exact peak checkpoint/metadata/curve, test-peak ranking and all-seed peak summaries",
+    "user replaced architecture search with ViNLI M3_FULL-only three-seed notebook; retain BF16/full7epochs/eval30/test-peak/HF-only recipe"
   ],
   "files": [
     {
@@ -36,7 +37,7 @@
     {
       "file": "README.md",
       "origin": "generated for standalone source extraction",
-      "extracted_sha256": "3473cc27964a31c1b30c92ade103c247ec4049567d2ba7fa2556b674588d5a9c"
+      "extracted_sha256": "877f6557ae90c3538c5a3a7d1c648265a47440d63813e8b8ad931e5cf2330061"
     },
     {
       "file": "configs/experiments/direct_vianli/method3_ema_smoothing.yaml",
@@ -756,6 +757,16 @@
       "file": "verify_source.py",
       "origin": "generated for standalone source extraction",
       "extracted_sha256": "1f6853e16ab26e2a8fc818a4eb8e1eff751ed2d8d6e4c06f76a38390c119821d"
+    },
+    {
+      "file": "scripts/build_vinli_m3_multiseed_notebook.py",
+      "origin": "generated for M3-only ViNLI rerun",
+      "extracted_sha256": "2b2702bb5e2286406371b1c35656bc1d98b6d901253204c2e783a09564fb216f"
+    },
+    {
+      "file": "notebooks/vinli_m3_bf16_multiseed.ipynb",
+      "origin": "generated for M3-only ViNLI rerun",
+      "extracted_sha256": "dd54b72a45ed1cd845df13c516dd2a40a70b70d579f4c65b9bf472adaff23e72"
     }
   ]
 }

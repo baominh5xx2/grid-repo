@@ -50,7 +50,22 @@ This command selects checkpoints on dev and keeps test locked. Increase
 Use a fresh output directory when comparing with previous FP16 runs; completed
 results in an existing directory are skipped unless `--rerun` is supplied.
 
-## ViNLI architecture notebook
+## ViNLI M3-only notebook (current)
+
+Open [vinli_m3_bf16_multiseed.ipynb in Colab](https://colab.research.google.com/github/baominh5xx2/grid-repo/blob/main/notebooks/vinli_m3_bf16_multiseed.ipynb).
+Run All runs **only M3_FULL on ViNLI**, seeds **42 / 2024 / 3407** sequentially.
+It keeps the current settings: max length 512, BF16 training / FP32 evaluation,
+batch 4 × accumulation 4, EMA/MSD, LR 1e-5, full seven epochs, evaluation every
+30 optimizer steps and patience 0. Each seed retains its highest test Macro-F1
+EMA checkpoint, with predictions/curve verified at an immutable HF revision.
+The summary exports all three test-selected exploratory peaks and their mean/std;
+dev-selected test scores appear separately. No ensemble or new architecture jobs.
+Use Colab Secrets `HF_TOKEN` (write), optional `GITHUB_TOKEN` for private checkout,
+and a BF16-capable CUDA GPU. The fresh run group reruns all three seeds; completed
+verified jobs resume only with matching source/settings/runtime. The notebook
+generator is `scripts/build_vinli_m3_multiseed_notebook.py`.
+
+## Previous ViNLI architecture notebook
 
 Open [vinli_architecture_bf16_seed42.ipynb in Colab](https://colab.research.google.com/github/baominh5xx2/grid-repo/blob/main/notebooks/vinli_architecture_bf16_seed42.ipynb).
 Run All screens **M3_FULL + token alignment + relation width 256 + conditioned
