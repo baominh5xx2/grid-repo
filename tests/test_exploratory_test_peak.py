@@ -72,6 +72,8 @@ class ExploratoryTestPeakTests(unittest.TestCase):
             batch.write_json(run_dir / "result.json", result)
             (run_dir / "best_model.pt").write_bytes(b"synthetic-dev-weights")
             (run_dir / "best_test_model.pt").write_bytes(b"synthetic-test-peak-weights")
+            (run_dir / "dev_history.csv").write_text("optimizer_step,current_dev_macro_f1,ema_dev_macro_f1\n100,0.9,1.0\n")
+            (run_dir / "architecture_diagnostics.json").write_text('{"schema_version":1}')
             splits = {}
             for split in ("dev", "test"):
                 data_path = root / batch.DATA_DIRS[job.dataset] / f"{split}.jsonl"
@@ -80,6 +82,8 @@ class ExploratoryTestPeakTests(unittest.TestCase):
                 splits[split] = dict(sha256=hashlib.sha256(data_path.read_bytes()).hexdigest(), row_count=1)
                 frame = pd.DataFrame([dict(sample_id=split+'-1', gold_label='E', pred_label='E', logit_E=1.0, logit_C=0.0, logit_N=0.0)])
                 frame.to_csv(run_dir / f"{split}_predictions.csv", index=False)
+                if split == "dev":
+                    frame.to_csv(run_dir / "dev_predictions_current.csv", index=False)
                 if split == "test":
                     frame.to_csv(run_dir / "test_predictions_peak.csv", index=False)
             pd.DataFrame([dict(optimizer_step=100, test_macro_f1=1.0)]).to_csv(run_dir / "test_curve.csv", index=False)
@@ -89,7 +93,9 @@ class ExploratoryTestPeakTests(unittest.TestCase):
                 self.assertEqual((checkpoint/'pytorch_model.bin').read_bytes(), b"synthetic-dev-weights")
                 self.assertEqual((checkpoint/'exploratory_best_test_model.pt').read_bytes(), b"synthetic-test-peak-weights")
                 self.assertTrue((checkpoint/'exploratory_test_curve.csv').exists())
-                self.assertEqual(set(predictions), {'vianli_dev', 'vianli_test', 'vianli_test_exploratory_peak'})
+                self.assertEqual((checkpoint/'dev_history.csv').read_bytes(), (run_dir/'dev_history.csv').read_bytes())
+                self.assertEqual((checkpoint/'architecture_diagnostics.json').read_bytes(), (run_dir/'architecture_diagnostics.json').read_bytes())
+                self.assertEqual(set(predictions), {'vianli_dev', 'vianli_dev_current', 'vianli_test', 'vianli_test_exploratory_peak'})
                 self.assertTrue(metadata['test_peak_exploratory'])
                 self.assertTrue(metadata['target_test_accessed'])
                 return 'offline/synthetic', 'b'*40

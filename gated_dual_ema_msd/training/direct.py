@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from gated_dual_ema_msd.training.precision import bf16_enabled
 
+import csv
 import json
 import math
 import os
@@ -29,6 +30,7 @@ from gated_dual_ema_msd.models.flat_cafebert import FlatCafeBERT
 from gated_dual_ema_msd.tracking import HFHubUploader, WandbTracker
 from gated_dual_ema_msd.training.ema import ModelEMA
 from gated_dual_ema_msd.training.ema_context import ema_weights
+from gated_dual_ema_msd.training.diagnostics import ArchitectureDiagnostics, architecture_summary
 from gated_dual_ema_msd.training.optimizer_step import optimizer_update
 from gated_dual_ema_msd.training.selection import DevSelection
 
@@ -47,6 +49,12 @@ LABEL_MAP = {
     "n": 2,
 }
 LABELS = ["E", "C", "N"]
+DEV_HISTORY_FIELDS = [
+    "optimizer_step", "epoch", "current_macro_f1", "current_loss", "ema_macro_f1", "ema_loss",
+    "selected_source", "selected_macro_f1", "selection_eligible", "is_best", "patience_counter",
+    "learning_rate", "training_seconds", "train_seconds_per_optimizer_step", "evaluation_seconds",
+    "elapsed_seconds",
+]
 
 
 def _label_id(value: Any) -> int:
@@ -189,7 +197,7 @@ def evaluate_model(
     max_length: int = 512,
     batch_size: int = 16,
 ) -> Tuple[Dict[str, float], pd.DataFrame]:
-    """FP32 evaluation with loss, probabilities, and optional gate diagnostics."""
+    """FP32 evaluation with loss, probabilities, and optional architecture diagnostics."""
     was_training = model.training
     model.eval()
     all_logits: List[np.ndarray] = []
@@ -200,6 +208,7 @@ def evaluate_model(
     all_gate_means: List[np.ndarray] = []
     total_loss = 0.0
     total_examples = 0
+    architecture_diagnostics = ArchitectureDiagnostics()
     try:
         for batch_rows in eval_batches(rows, batch_size):
             batch = collate_eval_rows(batch_rows, tokenizer, max_length)
@@ -226,6 +235,7 @@ def evaluate_model(
                 all_gate_means.append(gate.float().mean(dim=-1).cpu().numpy())
             else:
                 all_gate_means.append(np.full(len(batch_rows), np.nan, dtype=np.float32))
+            architecture_diagnostics.add_batch(_unwrap_model(model), len(batch_rows))
     finally:
         if was_training:
             model.train()
@@ -257,6 +267,7 @@ def evaluate_model(
             "gate_mean": np.concatenate(all_gate_means, axis=0),
         }
     )
+    architecture_diagnostics.attach(frame)
     return metrics, frame
 
 
@@ -594,6 +605,14 @@ class DirectTrainer:
         dev_selection = DevSelection(patience=self.patience, mode="max")
         optimizer_step = 0
         started = time.time()
+        started_perf = time.perf_counter()
+        training_seconds = 0.0
+        evaluation_seconds = 0.0
+        final_dev_current = final_dev_selected = None
+        dev_current_frame = dev_selected_frame = None
+        history_path = self.output_dir / "dev_history.csv"
+        with history_path.open("w", newline="", encoding="utf-8") as handle:
+            csv.DictWriter(handle, fieldnames=DEV_HISTORY_FIELDS).writeheader()
         if self.device.type == "cuda":
             # This is emitted with the immutable run result so the matrix
             # supervisor can tune its five-process packing from real, not
@@ -613,6 +632,7 @@ class DirectTrainer:
         wandb_tracker.log_step({"lifecycle": "training"}, step=0)
 
         stop_training = False
+        training_clock = time.perf_counter()
         for epoch in range(1, self.max_epochs + 1):
             self.model.train()
             for micro_index, raw_batch in enumerate(train_loader, start=1):
@@ -664,19 +684,32 @@ class DirectTrainer:
                 if optimizer_step % self.eval_steps != 0 and optimizer_step != total_steps:
                     continue
 
-                current_metrics, _, ema_metrics, ema_frame = self._evaluate_pair(
+                if self.device.type == "cuda":
+                    torch.cuda.synchronize(self.device)
+                evaluation_started = time.perf_counter()
+                training_seconds += evaluation_started - training_clock
+                current_metrics, current_frame, ema_metrics, ema_frame = self._evaluate_pair(
                     ema_tracker, dev_rows
                 )
-                selected_metrics = ema_metrics or current_metrics
-                selected_source = "ema" if ema_metrics is not None else "current"
+                pair_evaluation_seconds = time.perf_counter() - evaluation_started
+                evaluation_seconds += pair_evaluation_seconds
+                selection_eligible = not self.use_ema or ema_metrics is not None
+                selected_metrics = ema_metrics if ema_metrics is not None else (
+                    current_metrics if selection_eligible else None
+                )
+                selected_source = "ema" if ema_metrics is not None else (
+                    "current" if selection_eligible else None
+                )
 
                 log_values: Dict[str, Any] = {
                     "dev/current_macro_f1": current_metrics["macro_f1"],
                     "dev/current_accuracy": current_metrics["accuracy"],
                     "dev/current_loss": current_metrics["loss"],
-                    "dev/selected_macro_f1": selected_metrics["macro_f1"],
+                    "dev/selection_eligible": selection_eligible,
                     "epoch": epoch,
                 }
+                if selected_metrics is not None:
+                    log_values["dev/selected_macro_f1"] = selected_metrics["macro_f1"]
                 if ema_metrics is not None:
                     log_values.update(
                         {
@@ -687,27 +720,50 @@ class DirectTrainer:
                     )
                 wandb_tracker.log_step(log_values, step=optimizer_step)
 
+                improved = False
+                if selection_eligible:
+                    improved = dev_selection.observe(
+                        selected_metrics["macro_f1"], optimizer_step,
+                        source=selected_source, epoch=epoch,
+                    )
+                history_row = {
+                    "optimizer_step": optimizer_step, "epoch": epoch,
+                    "current_macro_f1": current_metrics["macro_f1"], "current_loss": current_metrics["loss"],
+                    "ema_macro_f1": ema_metrics["macro_f1"] if ema_metrics is not None else None,
+                    "ema_loss": ema_metrics["loss"] if ema_metrics is not None else None,
+                    "selected_source": selected_source,
+                    "selected_macro_f1": selected_metrics["macro_f1"] if selected_metrics is not None else None,
+                    "selection_eligible": selection_eligible, "is_best": improved,
+                    "patience_counter": dev_selection.no_improve,
+                    "learning_rate": scheduler.get_last_lr()[0], "training_seconds": training_seconds,
+                    "train_seconds_per_optimizer_step": training_seconds / max(optimizer_step, 1),
+                    "evaluation_seconds": pair_evaluation_seconds,
+                    "elapsed_seconds": time.perf_counter() - started_perf,
+                }
+                with history_path.open("a", newline="", encoding="utf-8") as handle:
+                    csv.DictWriter(handle, fieldnames=DEV_HISTORY_FIELDS).writerow(history_row)
+
                 # Dense evaluation may precede EMA's first update. Track current
                 # dev diagnostics, but M3/M2 selection must use active EMA weights.
-                if self.use_ema and ema_metrics is None:
+                if not selection_eligible:
                     print(f"[{run_name}] Step {optimizer_step}: dev diagnostic only; waiting for EMA at step {self.ema_start_step}", flush=True)
+                    training_clock = time.perf_counter()
                     continue
 
-                improved = dev_selection.observe(
-                    selected_metrics["macro_f1"],
-                    optimizer_step,
-                    source=selected_source,
-                    epoch=epoch,
-                )
                 if improved:
                     torch.save(self.model.state_dict(), best_current_path)
                     with ema_weights(self.model, ema_tracker if selected_source == "ema" else None):
                         torch.save(self.model.state_dict(), best_path)
+                    final_dev_current = dict(current_metrics)
+                    final_dev_selected = dict(selected_metrics)
+                    dev_current_frame = current_frame.copy(deep=True)
+                    dev_selected_frame = (ema_frame if selected_source == "ema" else current_frame).copy(deep=True)
                     status = "NEW DEV BEST"
                 else:
                     status = f"no-imp ({dev_selection.no_improve}/{self.patience})"
 
                 if self.test_peak_exploratory:
+                    test_evaluation_started = time.perf_counter()
                     with ema_weights(self.model, ema_tracker if selected_source == "ema" else None):
                         scan_metrics, scan_frame = evaluate_model(
                             self.model, test_rows, self.tokenizer, self.device,
@@ -727,6 +783,7 @@ class DirectTrainer:
                                             "exploratory/peak_test_macro_f1": peak_test_metrics["macro_f1"],
                                             "exploratory/peak_test_step": peak_test_step}, step=optimizer_step)
                     print(f"[{run_name}] EXPLORATORY TEST step={optimizer_step} f1={scan_metrics['macro_f1']:.4f} peak={peak_test_metrics['macro_f1']:.4f} at step={peak_test_step}", flush=True)
+                    evaluation_seconds += time.perf_counter() - test_evaluation_started
 
                 log_line = (
                     f"[{run_name}] Ep {epoch}/{self.max_epochs} | Step {optimizer_step:4d}/{total_steps} | "
@@ -735,47 +792,70 @@ class DirectTrainer:
                 print(log_line, flush=True)
                 with log_file.open("a", encoding="utf-8") as handle:
                     handle.write(log_line + "\n")
+                training_clock = time.perf_counter()
                 if dev_selection.should_stop:
                     stop_training = True
                     break
             if stop_training:
                 break
+        if self.device.type == "cuda":
+            torch.cuda.synchronize(self.device)
+        training_seconds += time.perf_counter() - training_clock
 
-        if not best_path.exists():
+        if final_dev_selected is None and self.use_ema:
+            wandb_tracker.log_step({"lifecycle": "training_failed", "failure_reason": "No eligible EMA dev evaluation"})
+            wandb_tracker.finish()
+            raise RuntimeError("Training ended without an eligible EMA dev evaluation; no dev-selected checkpoint can be published")
+
+        if final_dev_selected is None:
+            # Preserve the non-EMA zero-update fallback; normal runs already
+            # retain both sources at their selected evaluation step.
             torch.save(self.model.state_dict(), best_current_path)
             torch.save(self.model.state_dict(), best_path)
+            evaluation_started = time.perf_counter()
+            final_dev_current, dev_current_frame = evaluate_model(
+                self.model, dev_rows, self.tokenizer, self.device,
+                self.max_length, self.physical_batch_size * 2,
+            )
+            fallback_evaluation_seconds = time.perf_counter() - evaluation_started
+            evaluation_seconds += fallback_evaluation_seconds
+            with history_path.open("a", newline="", encoding="utf-8") as handle:
+                csv.DictWriter(handle, fieldnames=DEV_HISTORY_FIELDS).writerow({
+                    "optimizer_step": optimizer_step, "epoch": 0,
+                    "current_macro_f1": final_dev_current["macro_f1"], "current_loss": final_dev_current["loss"],
+                    "ema_macro_f1": None, "ema_loss": None,
+                    "selected_source": None, "selected_macro_f1": None,
+                    "selection_eligible": False, "is_best": False, "patience_counter": 0,
+                    "learning_rate": scheduler.get_last_lr()[0], "training_seconds": training_seconds,
+                    "train_seconds_per_optimizer_step": training_seconds / max(optimizer_step, 1),
+                    "evaluation_seconds": fallback_evaluation_seconds,
+                    "elapsed_seconds": time.perf_counter() - started_perf,
+                })
+            final_dev_selected, dev_selected_frame = dict(final_dev_current), dev_current_frame.copy(deep=True)
 
-        # Evaluate the two checkpoints from the same dev-selected optimizer step.
-        self.model.load_state_dict(_load_weights(best_current_path, self.device), strict=True)
-        final_dev_current, dev_current_frame = evaluate_model(
-            self.model,
-            dev_rows,
-            self.tokenizer,
-            self.device,
-            self.max_length,
-            self.physical_batch_size * 2,
-        )
-        dev_current_frame.to_csv(self.output_dir / "dev_predictions_current.csv", index=False)
-
+        # The retained predictions and metrics belong to the exact selected
+        # optimizer step. Load its weights for final test or artifact upload.
         self.model.load_state_dict(_load_weights(best_path, self.device), strict=True)
-        final_dev_selected, dev_selected_frame = evaluate_model(
-            self.model,
-            dev_rows,
-            self.tokenizer,
-            self.device,
-            self.max_length,
-            self.physical_batch_size * 2,
-        )
+        dev_current_frame.to_csv(self.output_dir / "dev_predictions_current.csv", index=False)
         dev_selected_frame.to_csv(self.output_dir / "dev_predictions.csv", index=False)
         dev_confusion = save_confusion_matrix(
             dev_selected_frame, self.output_dir / "dev_confusion_matrix.csv"
         )
+        dev_architecture_diagnostics = architecture_summary(dev_selected_frame)
+        diagnostics_path = self.output_dir / "architecture_diagnostics.json"
+        diagnostics_path.write_text(json.dumps({
+            "optimizer_step": dev_selection.best_step, "epoch": dev_selection.best_epoch,
+            "selected_source": dev_selection.weight_source,
+            "selected": dev_architecture_diagnostics,
+            "current": architecture_summary(dev_current_frame),
+        }, indent=2, ensure_ascii=False), encoding="utf-8")
 
         test_current: Optional[Dict[str, float]] = None
         test_selected: Optional[Dict[str, float]] = None
         test_selected_frame = pd.DataFrame()
         if self.evaluate_test and test_rows:
             self.model.load_state_dict(_load_weights(best_path, self.device), strict=True)
+            evaluation_started = time.perf_counter()
             test_selected, test_selected_frame = evaluate_model(
                 self.model,
                 test_rows,
@@ -788,6 +868,7 @@ class DirectTrainer:
                 self.output_dir / "test_predictions.csv", index=False
             )
             test_evaluations += 1
+            evaluation_seconds += time.perf_counter() - evaluation_started
         test_confusion = (
             save_confusion_matrix(
                 test_selected_frame, self.output_dir / "test_confusion_matrix.csv"
@@ -824,7 +905,18 @@ class DirectTrainer:
             "dev_confusion_matrix": dev_confusion,
             "test_confusion_matrix": test_confusion,
             "dev_gate_statistics": gate_summary(dev_selected_frame),
+            "dev_architecture_diagnostics": dev_architecture_diagnostics,
+            "dev_history": str(history_path),
+            "architecture_diagnostics": str(diagnostics_path),
             "test_gate_statistics": gate_summary(test_selected_frame),
+            "optimizer_steps": optimizer_step,
+            "training_seconds": training_seconds,
+            "train_seconds_per_optimizer_step": training_seconds / max(optimizer_step, 1),
+            "evaluation_seconds": evaluation_seconds,
+            "timing_conventions": {
+                "training_seconds": "Wall time of microbatches, data loading, optimizer/scheduler and EMA updates; excludes evaluations and checkpoint/export time; CUDA synchronized at evaluation boundaries.",
+                "evaluation_seconds": "Wall time of dev current/EMA evaluation pairs and any explicitly authorized test evaluations; history evaluation_seconds is per dev pair.",
+            },
             "elapsed_seconds": time.time() - started,
             "peak_gpu_memory_bytes": (
                 int(torch.cuda.max_memory_allocated(self.device))

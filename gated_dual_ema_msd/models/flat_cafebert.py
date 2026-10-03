@@ -411,6 +411,26 @@ class FlatCafeBERT(nn.Module):
         return torch.bmm(weights.unsqueeze(1), hidden).squeeze(1)
 
     @staticmethod
+    def _normalized_attention_entropy(weights: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        """Entropy/log(valid key count); empty and singleton key sets yield zero."""
+        with torch.no_grad():
+            weights = weights.detach().float() * mask.to(torch.float32)
+            weights = weights / weights.sum(dim=-1, keepdim=True).clamp_min(1e-8)
+            entropy = -(weights * weights.clamp_min(1e-30).log()).sum(dim=-1)
+            count = mask.sum(dim=-1)
+            return torch.where(count > 1, entropy / count.clamp_min(2).float().log(), torch.zeros_like(entropy))
+
+    def _record_pool_diagnostics(self, premise_weights, hypothesis_weights, premise_mask, hypothesis_mask):
+        if self.training:
+            return
+        diagnostics = getattr(self, "last_architecture_diagnostics", {})
+        diagnostics.update(
+            premise_attention_entropy=self._normalized_attention_entropy(premise_weights, premise_mask),
+            hypothesis_attention_entropy=self._normalized_attention_entropy(hypothesis_weights, hypothesis_mask),
+        )
+        self.last_architecture_diagnostics = diagnostics
+
+    @staticmethod
     def _relation_difference(
         premise: torch.Tensor, hypothesis: torch.Tensor, mode: str
     ) -> torch.Tensor:
@@ -450,7 +470,18 @@ class FlatCafeBERT(nn.Module):
         # Evaluation consumes this detached diagnostic to produce per-example
         # and per-class gate statistics without retaining a training graph.
         self.last_gate = gate.detach()
-        return global_pair + gate * self.fusion_norm(relation)
+        branch = gate * self.fusion_norm(relation)
+        if not self.training:
+            with torch.no_grad():
+                diagnostics = getattr(self, "last_architecture_diagnostics", {})
+                diagnostics.update(
+                    gate_channel_std=gate.detach().float().std(dim=-1, unbiased=False),
+                    gate_fraction_below_005=(gate.detach() < 0.05).float().mean(dim=-1),
+                    gate_fraction_above_095=(gate.detach() > 0.95).float().mean(dim=-1),
+                    relation_to_cls_norm_ratio=branch.detach().float().norm(dim=-1) / global_pair.detach().float().norm(dim=-1).clamp_min(1e-8),
+                )
+                self.last_architecture_diagnostics = diagnostics
+        return global_pair + branch
 
     def _pool_gated_dual(
         self, hidden: torch.Tensor, input_ids: torch.Tensor, attention_mask: torch.Tensor
@@ -466,6 +497,11 @@ class FlatCafeBERT(nn.Module):
             hypothesis = self._attentive_pool(
                 hidden, hypothesis_mask, self.hypothesis_attention
             )
+            if not self.training:
+                with torch.no_grad():
+                    p_scores = self.premise_attention(hidden).squeeze(-1).float().masked_fill(~premise_mask, -1e4)
+                    h_scores = self.hypothesis_attention(hidden).squeeze(-1).float().masked_fill(~hypothesis_mask, -1e4)
+                    self._record_pool_diagnostics(p_scores.softmax(-1), h_scores.softmax(-1), premise_mask, hypothesis_mask)
         if self.relation_features_mode == "extended":
             p_norm = F.normalize(premise, p=2, dim=-1)
             h_norm = F.normalize(hypothesis, p=2, dim=-1)
@@ -536,6 +572,15 @@ class FlatCafeBERT(nn.Module):
             h_to_p = h_to_p / h_to_p.sum(dim=-1, keepdim=True).clamp(min=1e-8)
             aligned_premise = torch.bmm(h_to_p, projected_for_alignment)
 
+        if not self.training:
+            with torch.no_grad():
+                p_entropy = self._normalized_attention_entropy(p_to_h, hypothesis_mask.unsqueeze(1))
+                h_entropy = self._normalized_attention_entropy(h_to_p, premise_mask.unsqueeze(1))
+                self.last_architecture_diagnostics = {
+                    "premise_alignment_entropy": (p_entropy * premise_mask).sum(-1) / premise_mask.sum(-1).clamp_min(1),
+                    "hypothesis_alignment_entropy": (h_entropy * hypothesis_mask).sum(-1) / hypothesis_mask.sum(-1).clamp_min(1),
+                }
+
         premise_compare = self.local_compare(
             torch.cat(
                 [
@@ -597,6 +642,7 @@ class FlatCafeBERT(nn.Module):
         # forbid input_ids together with inputs_embeds, so exactly one reaches
         # the encoder; the pooling heads still read the original ``input_ids``
         # for premise/hypothesis segment masks.
+        self.last_architecture_diagnostics = {}
         output = self.backbone(
             input_ids=input_ids if inputs_embeds is None else None,
             attention_mask=attention_mask,

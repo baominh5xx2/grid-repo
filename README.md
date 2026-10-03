@@ -50,6 +50,20 @@ This command selects checkpoints on dev and keeps test locked. Increase
 Use a fresh output directory when comparing with previous FP16 runs; completed
 results in an existing directory are skipped unless `--rerun` is supplied.
 
+## ViNLI architecture notebook
+
+Open [vinli_architecture_bf16_seed42.ipynb in Colab](https://colab.research.google.com/github/baominh5xx2/grid-repo/blob/main/notebooks/vinli_architecture_bf16_seed42.ipynb).
+Run All screens **M3_FULL + token alignment + relation width 256 + conditioned
+pooling**, seed 42, one model per run. It uses ViNLI max length 512,
+BF16 training / FP32 evaluation, dev every 30 optimizer steps, patience 50,
+EMA and MSD, with HF-only artifacts. Screening keeps test locked.
+
+Later cells define explicit capacity-control, paired-seed confirmation and
+inference-only final launchers. They stay inert during Run All. Confirmation
+requires a dev improvement and matching frozen source, recipe, data and runtime.
+See [the notebook guide](docs/vinli_architecture_notebook.md) for invocation,
+decision rules and resume behavior. The original notebook below remains available.
+
 ## BF16 multi-seed notebook
 
 Open [bf16_multiseed_main_method.ipynb in Colab](https://colab.research.google.com/github/baominh5xx2/grid-repo/blob/main/notebooks/bf16_multiseed_main_method.ipynb).

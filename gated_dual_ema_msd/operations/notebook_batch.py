@@ -164,6 +164,8 @@ def publish_run(run_dir: pathlib.Path, repo: pathlib.Path, job: MatrixJob, confi
     validate_run(result, job, frozen_final=frozen_final, test_peak_exploratory=exploratory)
     prediction_paths = {}
     split_outputs = [("dev", "dev_predictions.csv")]
+    if (run_dir / "dev_predictions_current.csv").exists():
+        split_outputs.append(("dev", "dev_predictions_current.csv"))
     if frozen_final or exploratory:
         split_outputs.append(("test", "test_predictions.csv"))
     if exploratory:
@@ -179,7 +181,8 @@ def publish_run(run_dir: pathlib.Path, repo: pathlib.Path, job: MatrixJob, confi
         validate_predictions(frame, [str(row["id"]) for row in rows])
         if frame["gold_label"].tolist() != [row["label"] for row in rows]:
             raise ValueError(f"Prediction gold labels differ from the pinned {split} split")
-        key = f"{job.dataset}_{split}" + ("_exploratory_peak" if filename == "test_predictions_peak.csv" else "")
+        suffix = "_exploratory_peak" if filename == "test_predictions_peak.csv" else ("_current" if filename == "dev_predictions_current.csv" else "")
+        key = f"{job.dataset}_{split}" + suffix
         prediction_paths[key] = prediction_path
     if exploratory:
         curve = pd.read_csv(run_dir / "test_curve.csv")
@@ -202,6 +205,10 @@ def publish_run(run_dir: pathlib.Path, repo: pathlib.Path, job: MatrixJob, confi
         checkpoint = temporary / "checkpoint"
         checkpoint.mkdir()
         shutil.copy2(run_dir / "best_model.pt", checkpoint / "pytorch_model.bin")
+        for name in ("dev_history.csv", "architecture_diagnostics.json"):
+            evidence = run_dir / name
+            if evidence.exists():
+                shutil.copy2(evidence, checkpoint / name)
         if exploratory:
             shutil.copy2(run_dir / "best_test_model.pt", checkpoint / "exploratory_best_test_model.pt")
             shutil.copy2(run_dir / "test_curve.csv", checkpoint / "exploratory_test_curve.csv")
@@ -218,6 +225,8 @@ def publish_run(run_dir: pathlib.Path, repo: pathlib.Path, job: MatrixJob, confi
     if not re.fullmatch(r"[0-9a-f]{40}", revision):
         raise RuntimeError("HF did not return an immutable commit SHA")
     result.update(hf_repo_id=repo_id, hf_revision=revision, artifact_readback_verified=True,
+                  data_fingerprints=metadata["data_fingerprints"], model_revision=MODEL_REVISION,
+                  hf_checkpoint_sha256=sha256_file(run_dir / "best_model.pt"),
                   wandb_enabled=False, artifact_backend="huggingface",
                   publication_helper_patch_git_sha=globals().get("BATCH_HELPER_PATCH_SHA"),
                   batch_manifest_sha256=manifest_digest(batch_manifest), git_sha=batch_manifest["git_sha"],

@@ -17,7 +17,9 @@
     "add pre-clone GitHub token authentication via Colab Secrets and temporary secret-free askpass helper",
     "explicit EMA parameters, dev evaluation every 50 optimizer steps; EMA-only selection from its first update",
     "user-approved final evaluation and subsequently requested labelled exploratory test-peak scan with separate checkpoints, predictions and summaries",
-    "user removed W&B: HF-only notebook/preflight/publication, no_wandb batch training and pinned helper hotfix for completed Colab runs"
+    "user removed W&B: HF-only notebook/preflight/publication, no_wandb batch training and pinned helper hotfix for completed Colab runs",
+    "add opt-in single-model architecture screening, capacity controls and dev-gated paired confirmation notebook; preserve canonical matrices and M3 arithmetic",
+    "export dev history, FP32 attention/gate diagnostics and immutable HF evidence; add bound inference-only final evaluation with no-repeat recovery"
   ],
   "files": [
     {
@@ -33,7 +35,7 @@
     {
       "file": "README.md",
       "origin": "generated for standalone source extraction",
-      "extracted_sha256": "d41b031102d014f7fa7e94df05effe9e8e3bd6fb331c59290e88910978d7b8b1"
+      "extracted_sha256": "0bf2c1c46814400bb8943ccde24b2e7e545e78607a085b7b7eb2f9993598c41a"
     },
     {
       "file": "configs/experiments/direct_vianli/method3_ema_smoothing.yaml",
@@ -70,6 +72,16 @@
       "extracted_sha256": "16475f246df67c98c8ed4753d76b2a25f79707bd6b4af90ea25421cf98042b5d"
     },
     {
+      "file": "docs/superpowers/plans/2026-10-03-vinli-single-model-architecture-search.md",
+      "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
+      "extracted_sha256": "6eec8664ee299f28be79f5ed433452100dc4e337846e7c5ac978d10998d6f071"
+    },
+    {
+      "file": "docs/vinli_architecture_notebook.md",
+      "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
+      "extracted_sha256": "d5cc5b294ab6236d014c81c6823ab6a5d11625f29a5077d3829309d6339ce8eb"
+    },
+    {
       "file": "gated_dual_ema_msd/__init__.py",
       "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\__init__.py",
       "original_sha256": "5a38fa4f34fac6c622255464abfe5e76e87ef27171d2eb9cecffaaecfa3833c5",
@@ -85,13 +97,13 @@
       "file": "gated_dual_ema_msd/cli/evaluate.py",
       "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\cli\\evaluate.py",
       "original_sha256": "e4aff6e1ca7432571dfbc14bc86d6d4b8ea231afc2fdc75484a7e76fe567c850",
-      "extracted_sha256": "79bc7e6b8168281886ab0edeb03f0d2c00cee0922c8e3fd5dc75435db9bf5e1c"
+      "extracted_sha256": "a0a12d6bec83dd6077c2fd82da5bca76159494b562b109861c491e2545353343"
     },
     {
       "file": "gated_dual_ema_msd/cli/matrix.py",
       "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\cli\\matrix.py",
       "original_sha256": "2bd1103b353ba26c0cf7ba1cd86ab642f8216a7b72848bc40b7705c44280462d",
-      "extracted_sha256": "7d24ae850c485b1c4e32c44bfb3ecc0cbbac9f9586183dd085e118607fa6f616"
+      "extracted_sha256": "31fa3e5e675538acfec9d6fca9dbcbcc33f0c7b102819f228ca12069e9d44975"
     },
     {
       "file": "gated_dual_ema_msd/cli/r2.py",
@@ -204,7 +216,7 @@
       "file": "gated_dual_ema_msd/config/experiments.py",
       "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\config\\experiments.py",
       "original_sha256": "346c1826a0caa7f3fdecbe268d75539342a4f3a36dfb1f6254f9b15e29d280bf",
-      "extracted_sha256": "81b628cd92baf209e1089ab9b23464592e4aed8575821045a38cedf07c02329f"
+      "extracted_sha256": "1623b7f58eda1e6400eaba01c1e5a6d1b51ba9612c8d4854865e443cedcba487"
     },
     {
       "file": "gated_dual_ema_msd/config/r2_validation.py",
@@ -339,6 +351,11 @@
       "extracted_sha256": "5d21ab0273bdaf64934234d18a2a5f4f8cbe5494e2b80b386a8558a95fe175e4"
     },
     {
+      "file": "gated_dual_ema_msd/models/architecture_search.py",
+      "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
+      "extracted_sha256": "55de5a254280b56f4910c59d9ae767f9a267e7a0781450995b4c67fe9f4bf4ef"
+    },
+    {
       "file": "gated_dual_ema_msd/models/base.py",
       "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\models\\base.py",
       "original_sha256": "6231497eeb2e11ec2fda537a350ffbf20d4bb463eb1257c94da0ac8bd730c0d7",
@@ -354,13 +371,13 @@
       "file": "gated_dual_ema_msd/models/factory.py",
       "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\models\\factory.py",
       "original_sha256": "7fbb0e7fcccafb0138be65aa68fca40467abe80c05cffe6472cc83ffa4d531aa",
-      "extracted_sha256": "746148ae326c426c0513b867d51a09375b723eae967e90fc085d0f13e35c3a20"
+      "extracted_sha256": "6ecdd28aa46ce150b253d763c6ced1fc9edc7340f2de80d5e966b5a81f1f1851"
     },
     {
       "file": "gated_dual_ema_msd/models/flat_cafebert.py",
       "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\models\\flat_cafebert.py",
       "original_sha256": "8076e98959ce5812544966bb2f57d392fd3fe5565834127527b2e5ee1e3c41ed",
-      "extracted_sha256": "03d58a3e34b10f564d3939cdcbe1587188623b99e5c4f5e108abfab0f700ed14"
+      "extracted_sha256": "da03b9b64500cf291c961d8dd71578d9ac99237d4fa794e2b4c8f65b1b7f7742"
     },
     {
       "file": "gated_dual_ema_msd/models/gated_dual.py",
@@ -387,6 +404,16 @@
       "extracted_sha256": "7b8ae1fffa4634ee6102c15039cca3dbfa51bba2e90aa2294fe86c804f77c753"
     },
     {
+      "file": "gated_dual_ema_msd/operations/architecture_final.py",
+      "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
+      "extracted_sha256": "e7a1b85097a674bc461a8bd978b5ae0cff5fe64685d5ba80a25b942145b3fed0"
+    },
+    {
+      "file": "gated_dual_ema_msd/operations/architecture_search.py",
+      "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
+      "extracted_sha256": "c7117c88d8d529a3994de8688a86210c6852026626cabac2fb173ece2a3c5fd6"
+    },
+    {
       "file": "gated_dual_ema_msd/operations/audit_multisource.py",
       "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\operations\\audit_multisource.py",
       "original_sha256": "b77770875e3b875ecd0c1a7289498d891bab3660c71a0157f67cd1b7a338e1ef",
@@ -401,7 +428,7 @@
     {
       "file": "gated_dual_ema_msd/operations/notebook_batch.py",
       "origin": "added for BF16 multi-seed notebook",
-      "extracted_sha256": "f941c3da1d76668f900b50e25a4d4d1658d335494ec4ee12ee035e4302cdc19a"
+      "extracted_sha256": "9557298251fd73726086e0dfbf29088636449851e34200791f0a10e4b30ad819"
     },
     {
       "file": "gated_dual_ema_msd/operations/prepare_vianli.py",
@@ -482,10 +509,15 @@
       "extracted_sha256": "d135f69448761902c2e2b350e234e06f4944167a589dc3396acf8ce1de56bf6c"
     },
     {
+      "file": "gated_dual_ema_msd/training/diagnostics.py",
+      "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
+      "extracted_sha256": "470549fd40c1045a54a063ead3ae960ed56bebacd37f755e86d224dc6776868f"
+    },
+    {
       "file": "gated_dual_ema_msd/training/direct.py",
       "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\direct.py",
       "original_sha256": "d5b088f9c81f79a5c9267bc7e945414bf01a8a97cc12a536e50b221cf689570b",
-      "extracted_sha256": "5bdc8203eaacd962bca9f0bd4919444324d54091947bb2db590c68743f905a70"
+      "extracted_sha256": "11bcf2d6ef301c6b2354d3bcdfc9cbea41c6162fc8d5e3cbf902088619cb0a4c"
     },
     {
       "file": "gated_dual_ema_msd/training/ema.py",
@@ -600,6 +632,11 @@
       "extracted_sha256": "d1f1bb99cd37434a08c19716115d28984376c2f6eb235e0d8216b307caaae2b2"
     },
     {
+      "file": "notebooks/vinli_architecture_bf16_seed42.ipynb",
+      "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
+      "extracted_sha256": "06900a0fdf87c136aa968b1a8acad9f78d2580401531d35abcdfa379d0460c1b"
+    },
+    {
       "file": "pyproject.toml",
       "origin": "generated for standalone source extraction",
       "extracted_sha256": "daa97035a0312d6171af5169af37616ac0125814bccf0621748de87727384a8e"
@@ -618,6 +655,11 @@
       "file": "scripts/build_bf16_multiseed_notebook.py",
       "origin": "added for BF16 multi-seed notebook",
       "extracted_sha256": "5b264e208c07f1afa78000258f03e32be6ea5a12437c67cd5d0167876746cc5a"
+    },
+    {
+      "file": "scripts/build_vinli_architecture_notebook.py",
+      "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
+      "extracted_sha256": "211bdf0fb712d531b0b7d506217eb438f025156ce22ae6e6dc163328693be0f5"
     },
     {
       "file": "scripts/migrate_vinli_checkpoint.py",
@@ -640,6 +682,41 @@
       "extracted_sha256": "50d33bc4e6550c121333bad3a3d2903e22d6a04f59ff37687301b76a0300875e"
     },
     {
+      "file": "tests/test_architecture_decisions.py",
+      "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
+      "extracted_sha256": "9048ba168aeea3f472539279ace9819964c429e684e6a39e882a800e1b4d1b86"
+    },
+    {
+      "file": "tests/test_architecture_diagnostics.py",
+      "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
+      "extracted_sha256": "663fe1ab56fc01761ae7da6e8885c7ce6be52e4369cb682ff7cffd5839a0bf1f"
+    },
+    {
+      "file": "tests/test_architecture_final_artifacts.py",
+      "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
+      "extracted_sha256": "b7cd3fc1ab236e964ae71278aa2a05b45f1bbf867571d76dec34581517e23813"
+    },
+    {
+      "file": "tests/test_architecture_final_eval.py",
+      "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
+      "extracted_sha256": "0a8bfd55b0e6d3afb2d98c68e3b0b7095626b473fea87f541030eac68bbf7e11"
+    },
+    {
+      "file": "tests/test_architecture_history.py",
+      "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
+      "extracted_sha256": "311fcbc88b6469e05bae65c38cfa8a44897ab5a560c5b6fabbddfa02a3793b51"
+    },
+    {
+      "file": "tests/test_architecture_notebook.py",
+      "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
+      "extracted_sha256": "a9d869749b1a07fb814802318e366d174408b67f934cf933b86b07c731310d19"
+    },
+    {
+      "file": "tests/test_architecture_search.py",
+      "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
+      "extracted_sha256": "323f4d238b36da79cf32db986f306ae190c5b50ec341868a7d9a27557db98b7d"
+    },
+    {
       "file": "tests/test_colab_bootstrap.py",
       "origin": "generated for paper audit and Colab authentication",
       "extracted_sha256": "ab0c87b4d94af80db1237ce9d58ba274ad99ed2765d5857b94e80af061f47818"
@@ -647,7 +724,7 @@
     {
       "file": "tests/test_exploratory_test_peak.py",
       "origin": "generated for paper audit and Colab authentication",
-      "extracted_sha256": "c08a4b9c4807c764c86eedba0f5edb3d4691f7a9fc2c0fdb5c01a6a2a5547d22"
+      "extracted_sha256": "796fa79ab196c62c03e2580cf6963af2088daa1c3caea06fab0758ca8f3d77a1"
     },
     {
       "file": "tests/test_notebook_batch.py",
@@ -662,12 +739,12 @@
     {
       "file": "tests/test_precision.py",
       "origin": "added for BF16 training update",
-      "extracted_sha256": "6a60cc3f6ccf7f104057841c11a5c6f0df3b18970d2329949d4aaffbb862ac6a"
+      "extracted_sha256": "5b8c50e7d4ba26723295592af5093fd4db571706bc823f7066c037ab17f154c1"
     },
     {
       "file": "verify_source.py",
       "origin": "generated for standalone source extraction",
-      "extracted_sha256": "499fe0cb948527a55d11f75b945a2053eb09accd2f87fdf2dca31ef9a9b0320f"
+      "extracted_sha256": "1f6853e16ab26e2a8fc818a4eb8e1eff751ed2d8d6e4c06f76a38390c119821d"
     }
   ]
 }

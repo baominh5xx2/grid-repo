@@ -26,6 +26,7 @@ from gated_dual_ema_msd.experiment_registry import (
     EMA_DECAY,
     EMA_START_STEP,
     EXPERIMENTS,
+    CANONICAL_EXPERIMENTS,
     MAIN_EXPERIMENTS,
     SIGNAL_EXPERIMENTS,
     get_experiment,
@@ -68,7 +69,7 @@ def build_jobs(cohort: str, datasets: Sequence[str]) -> List[MatrixJob]:
         tuples = [
             (dataset, experiment_id, 42)
             for dataset in datasets
-            for experiment_id in EXPERIMENTS
+            for experiment_id in CANONICAL_EXPERIMENTS
         ]
     elif cohort == "robustness":
         tuples = [
@@ -78,7 +79,7 @@ def build_jobs(cohort: str, datasets: Sequence[str]) -> List[MatrixJob]:
             for seed in (2024, 3407)
         ]
     elif cohort in ("all", "multiseed"):
-        tuples = iter_matrix(datasets=datasets, experiment_ids=EXPERIMENTS)
+        tuples = iter_matrix(datasets=datasets, experiment_ids=CANONICAL_EXPERIMENTS)
     else:
         raise ValueError(f"Unsupported cohort={cohort!r}")
     return [MatrixJob(*item) for item in tuples]

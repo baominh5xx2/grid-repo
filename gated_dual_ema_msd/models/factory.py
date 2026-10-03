@@ -19,6 +19,10 @@ from gated_dual_ema_msd.models.baselines import (
     VanillaMSDCafeBERT,
 )
 from gated_dual_ema_msd.models.gated_dual import GatedDualCafeBERT
+from gated_dual_ema_msd.models.architecture_search import (
+    ConditionedPoolCafeBERT,
+    TokenAlignmentCafeBERT,
+)
 
 MODEL_REGISTRY: Dict[str, Type[BaseNLIModel]] = {
     # Proposed SOTA Method (P0)
@@ -37,6 +41,13 @@ MODEL_REGISTRY: Dict[str, Type[BaseNLIModel]] = {
     "gated_dual_no_interaction": GatedDualNoInteractionCafeBERT,
     "gated_dual_no_gate": GatedDualNoGateCafeBERT,
     "gated_dual_no_bottleneck": GatedDualNoBnCafeBERT,
+    # Architecture screening uses distinct types without altering legacy M3.
+    "gated_dual_rel256": GatedDualCafeBERT,
+    "gated_dual_rel230": GatedDualCafeBERT,
+    "gated_dual_rel304": GatedDualCafeBERT,
+    "gated_dual_rel512": GatedDualCafeBERT,
+    "conditioned_pool": ConditionedPoolCafeBERT,
+    "token_alignment": TokenAlignmentCafeBERT,
 }
 
 

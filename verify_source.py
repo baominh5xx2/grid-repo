@@ -116,7 +116,7 @@ def main():
             assert result["test_evaluations"] == 0
             assert result["selection_policy"] == "dev_macro_f1"
             assert (pathlib.Path(temporary) / "best_model.pt").is_file()
-    print("PASS: syntax, isolated CLI imports, contracts, 11 architectures and synthetic CPU training/checkpoint reload")
+    print(f"PASS: syntax, isolated CLI imports, contracts, {len(EXPERIMENTS)} architectures and synthetic CPU training/checkpoint reload")
 
 
 if __name__ == "__main__":

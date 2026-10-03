@@ -83,7 +83,7 @@ class PrecisionTests(unittest.TestCase):
                 # Exercise actual BF16 ops on CPU; the production capability gate
                 # enables BF16 on supported CUDA and leaves CPU runs in FP32.
                 with patch("gated_dual_ema_msd.training.direct.bf16_enabled", return_value=True), patch("torch.amp.GradScaler", side_effect=create_scaler):
-                    trainer = DirectTrainer(model=model, tokenizer=TinyTokenizer(), device=torch.device("cpu"), output_dir=pathlib.Path(directory), dataset="vianli", max_length=512, max_epochs=1, physical_batch_size=2, gradient_accumulation_steps=2, eval_steps=1, bf16=True, evaluate_test=False, use_wandb=False, use_hf=False)
+                    trainer = DirectTrainer(model=model, tokenizer=TinyTokenizer(), device=torch.device("cpu"), output_dir=pathlib.Path(directory), dataset="vianli", max_length=512, max_epochs=1, physical_batch_size=2, gradient_accumulation_steps=2, eval_steps=1, ema_start_step=1, bf16=True, evaluate_test=False, use_wandb=False, use_hf=False)
                     result = trainer.train(rows("train", 8), rows("dev", 3), run_name="synthetic-bf16-check")
                 self.assertEqual(result["test_evaluations"], 0)
                 self.assertTrue((pathlib.Path(directory) / "best_model.pt").is_file())

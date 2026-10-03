@@ -126,6 +126,42 @@ EXPERIMENTS: Dict[str, ExperimentDefinition] = {
 SIGNAL_EXPERIMENTS = ("B0_CLS", "M0_RELATION_GATE", "M3_FULL")
 MAIN_EXPERIMENTS = tuple(k for k, v in EXPERIMENTS.items() if v.family == "main")
 SINGLE_SEED_EXPERIMENTS = tuple(k for k, v in EXPERIMENTS.items() if v.seeds == SINGLE_SEED)
+CANONICAL_EXPERIMENTS = tuple(EXPERIMENTS)
+
+# Explicit opt-in candidates; default legacy matrices retain their 11 methods.
+ARCHITECTURE_EXPERIMENTS: Dict[str, ExperimentDefinition] = {
+    "ARCH_REL256": ExperimentDefinition(
+        "ARCH_REL256", "M3 with relation bottleneck width 256", "gated_dual_rel256",
+        use_msd=True, use_ema=True, seeds=MAIN_SEEDS, family="architecture",
+        model_kwargs={"relation_hidden": 256, "gate_bias": -1.0},
+    ),
+    "ARCH_CONDPOOL128": ExperimentDefinition(
+        "ARCH_CONDPOOL128", "M3 with opposite-segment-conditioned pooling", "conditioned_pool",
+        use_msd=True, use_ema=True, seeds=MAIN_SEEDS, family="architecture",
+        model_kwargs={"attention_dim": 128, "gate_bias": -1.0},
+    ),
+    "ARCH_ALIGN256": ExperimentDefinition(
+        "ARCH_ALIGN256", "Bidirectional token alignment with M3 MSD and EMA", "token_alignment",
+        use_msd=True, use_ema=True, seeds=MAIN_SEEDS, family="architecture",
+        model_kwargs={"alignment_dim": 256, "gate_bias": -1.0},
+    ),
+    "ARCH_REL230": ExperimentDefinition(
+        "ARCH_REL230", "M3 capacity control for conditioned pooling", "gated_dual_rel230",
+        use_msd=True, use_ema=True, seeds=MAIN_SEEDS, family="architecture",
+        model_kwargs={"relation_hidden": 230, "gate_bias": -1.0},
+    ),
+    "ARCH_REL304": ExperimentDefinition(
+        "ARCH_REL304", "M3 capacity control for token alignment", "gated_dual_rel304",
+        use_msd=True, use_ema=True, seeds=MAIN_SEEDS, family="architecture",
+        model_kwargs={"relation_hidden": 304, "gate_bias": -1.0},
+    ),
+    "ARCH_REL512": ExperimentDefinition(
+        "ARCH_REL512", "M3 conditional relation-width follow-up", "gated_dual_rel512",
+        use_msd=True, use_ema=True, seeds=MAIN_SEEDS, family="architecture",
+        model_kwargs={"relation_hidden": 512, "gate_bias": -1.0},
+    ),
+}
+EXPERIMENTS.update(ARCHITECTURE_EXPERIMENTS)
 
 
 def normalize_experiment_id(experiment_id: str) -> str:
@@ -176,7 +212,7 @@ def model_kwargs_for_experiment(
 
 def iter_matrix(
     datasets: Iterable[str] = DATASET_MAX_LENGTHS,
-    experiment_ids: Iterable[str] = EXPERIMENTS,
+    experiment_ids: Iterable[str] = CANONICAL_EXPERIMENTS,
 ) -> List[Tuple[str, str, int]]:
     """Return deterministic (dataset, experiment_id, seed) jobs.
 
