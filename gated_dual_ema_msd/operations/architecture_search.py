@@ -20,7 +20,8 @@ def environment_contract(metadata: dict) -> dict:
             "packages": {k: v for k, v in metadata.get("packages", {}).items() if k != "wandb"}}
 
 
-def _linked_manifests(screening_root: pathlib.Path, confirmation_root: pathlib.Path, candidate: str) -> dict:
+def _linked_manifests(screening_root: pathlib.Path, confirmation_root: pathlib.Path, candidate: str,
+                      protocol: str = "vinli_architecture_confirmation_train_dev") -> dict:
     try:
         pilot = json.loads((pathlib.Path(screening_root) / "batch_manifest.json").read_text(encoding="utf-8"))
         paired = json.loads((pathlib.Path(confirmation_root) / "batch_manifest.json").read_text(encoding="utf-8"))
@@ -35,11 +36,12 @@ def _linked_manifests(screening_root: pathlib.Path, confirmation_root: pathlib.P
     recipes = [{k: v for k, v in m.get("config", {}).items() if k != "hf_prefix"} for m in (pilot, paired)]
     if not recipes[0] or recipes[0] != recipes[1]:
         raise ValueError("Confirmation recipe differs from screening")
+    methods = list(dict.fromkeys(("M3_FULL", candidate)))
     expected_jobs = [dict(dataset="vinli", experiment_id=m, seed=s)
-                     for s in (2024, 3407) for m in ("M3_FULL", candidate)]
-    if (paired.get("protocol") != "vinli_architecture_confirmation_train_dev"
+                     for s in (2024, 3407) for m in methods]
+    if (paired.get("protocol") != protocol
             or paired.get("selected_candidate") != candidate or paired.get("seeds") != [2024, 3407]
-            or paired.get("methods") != ["M3_FULL", candidate] or paired.get("jobs") != expected_jobs):
+            or paired.get("methods") != methods or paired.get("jobs") != expected_jobs):
         raise ValueError("Confirmation manifest does not describe the selected paired study")
     return pilot
 

@@ -55,12 +55,15 @@ results in an existing directory are skipped unless `--rerun` is supplied.
 Open [vinli_architecture_bf16_seed42.ipynb in Colab](https://colab.research.google.com/github/baominh5xx2/grid-repo/blob/main/notebooks/vinli_architecture_bf16_seed42.ipynb).
 Run All screens **M3_FULL + token alignment + relation width 256 + conditioned
 pooling**, seed 42, one model per run. It uses ViNLI max length 512,
-BF16 training / FP32 evaluation, dev every 30 optimizer steps, patience 50,
-EMA and MSD, with HF-only artifacts. Screening keeps test locked.
+BF16 training / FP32 evaluation, dev/test every 30 optimizer steps after EMA
+activation, EMA and MSD, with HF-only artifacts. Patience 0 disables dev early
+stopping so each run uses the full seven-epoch budget.
 
-Later cells define explicit capacity-control, paired-seed confirmation and
-inference-only final launchers. They stay inert during Run All. Confirmation
-requires a dev improvement and matching frozen source, recipe, data and runtime.
+Each test improvement saves a separate peak checkpoint and its predictions.
+The default summary ranks architectures by verified **test-aware exploratory
+peak**, with dev metrics retained for reference. Later cells define capacity
+and extra-seed launchers; they stay inert during Run All. Extra seeds use the
+test-peak winner and matching frozen source, recipe, data and runtime.
 See [the notebook guide](docs/vinli_architecture_notebook.md) for invocation,
 decision rules and resume behavior. The original notebook below remains available.
 

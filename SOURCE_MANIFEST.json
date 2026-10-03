@@ -19,7 +19,8 @@
     "user-approved final evaluation and subsequently requested labelled exploratory test-peak scan with separate checkpoints, predictions and summaries",
     "user removed W&B: HF-only notebook/preflight/publication, no_wandb batch training and pinned helper hotfix for completed Colab runs",
     "add opt-in single-model architecture screening, capacity controls and dev-gated paired confirmation notebook; preserve canonical matrices and M3 arithmetic",
-    "export dev history, FP32 attention/gate diagnostics and immutable HF evidence; add bound inference-only final evaluation with no-repeat recovery"
+    "export dev history, FP32 attention/gate diagnostics and immutable HF evidence; add bound inference-only final evaluation with no-repeat recovery",
+    "user requested test-aware architecture search: enable EMA test scans every30 steps, full7epochs without dev early stopping, exact peak checkpoint/metadata/curve, test-peak ranking and all-seed peak summaries"
   ],
   "files": [
     {
@@ -35,7 +36,7 @@
     {
       "file": "README.md",
       "origin": "generated for standalone source extraction",
-      "extracted_sha256": "0bf2c1c46814400bb8943ccde24b2e7e545e78607a085b7b7eb2f9993598c41a"
+      "extracted_sha256": "3473cc27964a31c1b30c92ade103c247ec4049567d2ba7fa2556b674588d5a9c"
     },
     {
       "file": "configs/experiments/direct_vianli/method3_ema_smoothing.yaml",
@@ -74,12 +75,12 @@
     {
       "file": "docs/superpowers/plans/2026-10-03-vinli-single-model-architecture-search.md",
       "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
-      "extracted_sha256": "6eec8664ee299f28be79f5ed433452100dc4e337846e7c5ac978d10998d6f071"
+      "extracted_sha256": "e049ad5335f080436fe19befff4b5d20d8d12a3f0d1efbc9b5e78f377937e978"
     },
     {
       "file": "docs/vinli_architecture_notebook.md",
       "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
-      "extracted_sha256": "d5cc5b294ab6236d014c81c6823ab6a5d11625f29a5077d3829309d6339ce8eb"
+      "extracted_sha256": "67db33ee81b90b3bb103e109704369ccf84c6e7acc0979b0d46d4de1a102de3f"
     },
     {
       "file": "gated_dual_ema_msd/__init__.py",
@@ -115,7 +116,7 @@
       "file": "gated_dual_ema_msd/cli/train.py",
       "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\cli\\train.py",
       "original_sha256": "16c2ef54be77f9ae728a8386ee0d3a3c7af45393b29e732102d6ce02f4ee88c4",
-      "extracted_sha256": "5b3fd1fc9a2289d08da0697bce929613b08a06c5ae168059863b9b79abd4d81b"
+      "extracted_sha256": "2101708aabf6ef4deb833d6c460b128659f91c5fbeeaea3b6c9b8e6ddee01661"
     },
     {
       "file": "gated_dual_ema_msd/compatibility/__init__.py",
@@ -411,7 +412,12 @@
     {
       "file": "gated_dual_ema_msd/operations/architecture_search.py",
       "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
-      "extracted_sha256": "c7117c88d8d529a3994de8688a86210c6852026626cabac2fb173ece2a3c5fd6"
+      "extracted_sha256": "27149d20da30a5b52625928649df6df0ce361b646513b7996ee5ec657d91b7a4"
+    },
+    {
+      "file": "gated_dual_ema_msd/operations/architecture_test_peak.py",
+      "origin": "implemented for user-requested ViNLI test-peak search (2026-10-03)",
+      "extracted_sha256": "4f7ff839259d3691561c0ef1a57dc402c7101214c565a91336c96468491a8f2d"
     },
     {
       "file": "gated_dual_ema_msd/operations/audit_multisource.py",
@@ -428,7 +434,7 @@
     {
       "file": "gated_dual_ema_msd/operations/notebook_batch.py",
       "origin": "added for BF16 multi-seed notebook",
-      "extracted_sha256": "9557298251fd73726086e0dfbf29088636449851e34200791f0a10e4b30ad819"
+      "extracted_sha256": "b63d00e4f7decd09aba456d4c4bbbb228c20486e7b9ca118c787f725e6d9db29"
     },
     {
       "file": "gated_dual_ema_msd/operations/prepare_vianli.py",
@@ -517,7 +523,7 @@
       "file": "gated_dual_ema_msd/training/direct.py",
       "origin": "E:\\NLP\\our-final-paper-84a84bf-code\\refactored_clean\\src\\gated_dual_ema_msd\\training\\direct.py",
       "original_sha256": "d5b088f9c81f79a5c9267bc7e945414bf01a8a97cc12a536e50b221cf689570b",
-      "extracted_sha256": "11bcf2d6ef301c6b2354d3bcdfc9cbea41c6162fc8d5e3cbf902088619cb0a4c"
+      "extracted_sha256": "3f9558b73c69188e1e68ff2c17e41f557b5b61ac559ce5af333643b23e242ead"
     },
     {
       "file": "gated_dual_ema_msd/training/ema.py",
@@ -634,7 +640,7 @@
     {
       "file": "notebooks/vinli_architecture_bf16_seed42.ipynb",
       "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
-      "extracted_sha256": "06900a0fdf87c136aa968b1a8acad9f78d2580401531d35abcdfa379d0460c1b"
+      "extracted_sha256": "623ff87fbc58e4c4b12893613d26956a032cb2f823d3194ae6dd2e663b7f4c01"
     },
     {
       "file": "pyproject.toml",
@@ -659,7 +665,7 @@
     {
       "file": "scripts/build_vinli_architecture_notebook.py",
       "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
-      "extracted_sha256": "211bdf0fb712d531b0b7d506217eb438f025156ce22ae6e6dc163328693be0f5"
+      "extracted_sha256": "50a2e8cfbdc438cd8551eb78647b5ee4e7c40741281af535b4b4c65d733b1511"
     },
     {
       "file": "scripts/migrate_vinli_checkpoint.py",
@@ -709,12 +715,17 @@
     {
       "file": "tests/test_architecture_notebook.py",
       "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
-      "extracted_sha256": "a9d869749b1a07fb814802318e366d174408b67f934cf933b86b07c731310d19"
+      "extracted_sha256": "973726b9d33eab99bb434ba6441ba769d8c21e4788a49701b155266d97700548"
     },
     {
       "file": "tests/test_architecture_search.py",
       "origin": "implemented for ViNLI single-model architecture study (2026-10-03)",
       "extracted_sha256": "323f4d238b36da79cf32db986f306ae190c5b50ec341868a7d9a27557db98b7d"
+    },
+    {
+      "file": "tests/test_architecture_test_peak.py",
+      "origin": "implemented for user-requested ViNLI test-peak search (2026-10-03)",
+      "extracted_sha256": "4d52f1669666d54f3f6f6f344859e7ba3f1b4b71bebab8a884040d1a72144638"
     },
     {
       "file": "tests/test_colab_bootstrap.py",
@@ -724,7 +735,7 @@
     {
       "file": "tests/test_exploratory_test_peak.py",
       "origin": "generated for paper audit and Colab authentication",
-      "extracted_sha256": "796fa79ab196c62c03e2580cf6963af2088daa1c3caea06fab0758ca8f3d77a1"
+      "extracted_sha256": "2598163dd48e4a62aa6f2d9df9231b21fa26e90eb5fa56a14b178880aa5b2fdd"
     },
     {
       "file": "tests/test_notebook_batch.py",

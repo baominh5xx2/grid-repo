@@ -205,7 +205,7 @@ def publish_run(run_dir: pathlib.Path, repo: pathlib.Path, job: MatrixJob, confi
         checkpoint = temporary / "checkpoint"
         checkpoint.mkdir()
         shutil.copy2(run_dir / "best_model.pt", checkpoint / "pytorch_model.bin")
-        for name in ("dev_history.csv", "architecture_diagnostics.json"):
+        for name in ("dev_history.csv", "architecture_diagnostics.json", "test_peak.json"):
             evidence = run_dir / name
             if evidence.exists():
                 shutil.copy2(evidence, checkpoint / name)
@@ -232,6 +232,11 @@ def publish_run(run_dir: pathlib.Path, repo: pathlib.Path, job: MatrixJob, confi
                   batch_manifest_sha256=manifest_digest(batch_manifest), git_sha=batch_manifest["git_sha"],
                   hf_checkpoint_path="stage2_checkpoint/pytorch_model.bin",
                   hf_exploratory_peak_checkpoint_path="stage2_checkpoint/exploratory_best_test_model.pt" if exploratory else None)
+    if exploratory:
+        result.update(hf_exploratory_peak_checkpoint_sha256=sha256_file(run_dir / "best_test_model.pt"),
+                      peak_prediction_sha256=sha256_file(run_dir / "test_predictions_peak.csv"),
+                      test_curve_sha256=sha256_file(run_dir / "test_curve.csv"),
+                      peak_metadata_sha256=sha256_file(run_dir / "test_peak.json") if (run_dir / "test_peak.json").exists() else None)
     write_json(run_dir / "result.json", result)
     return result
 

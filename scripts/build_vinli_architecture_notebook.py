@@ -1,4 +1,4 @@
-"""Generate the dev-only ViNLI architecture notebook; never execute its cells."""
+"""Generate explicitly test-aware ViNLI architecture exploration; never run cells."""
 from __future__ import annotations
 
 import copy
@@ -11,7 +11,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 TARGET = ROOT / "notebooks/vinli_architecture_bf16_seed42.ipynb"
 
 
-def build_notebook(template_path: pathlib.Path | None = None) -> dict:
+def build_dev_notebook(template_path: pathlib.Path | None = None) -> dict:
     """Reuse established credential/bootstrap cells without importing their writer."""
     template_path = template_path or ROOT / "notebooks/bf16_multiseed_main_method.ipynb"
     template = json.loads(template_path.read_text(encoding="utf-8"))
@@ -78,6 +78,7 @@ def build_notebook(template_path: pathlib.Path | None = None) -> dict:
         SEEDS = [42]
         JOB_SPECS = [dict(dataset="vinli", experiment_id=method, seed=42) for method in METHODS]
         VINLI_MAX_LENGTH = 512
+        EXPECTED_SPLIT_SIZES = {"train": 18282, "dev": 2255}
         PINNED_MODEL_NAME = "uitnlp/CafeBERT"
         PINNED_MODEL_REVISION = "af76fcf2a04096b2b54b348a3e4eb48253c93c5d"
         PINNED_VINLI_REVISION = "47bd78ac5d075bd00a3cb4cdd3ede4eec4acf8c2"
@@ -216,7 +217,7 @@ def build_notebook(template_path: pathlib.Path | None = None) -> dict:
             experiment = report["experiment"]
             msd = report["msd"]
             if (report["train_precision"] != "bf16" or report["eval_precision"] != "fp32"
-                    or report["max_length"] != 512 or report["split_sizes"] != {"train": 18282, "dev": 2255}
+                    or report["max_length"] != 512 or report["split_sizes"] != EXPECTED_SPLIT_SIZES
                     or experiment["experiment_id"] != job.experiment_id
                     or experiment["use_ema"] is not True or experiment["use_msd"] is not True
                     or msd["msd_enabled"] is not True or msd["msd_num_paths"] != 5
@@ -380,6 +381,214 @@ def build_notebook(template_path: pathlib.Path | None = None) -> dict:
     for index, cell in enumerate(cells):
         cell["id"] = f"arch-{index:02d}"
     return {"cells": cells, "metadata": metadata, "nbformat": 4, "nbformat_minor": 5}
+
+
+def build_notebook(template_path: pathlib.Path | None = None) -> dict:
+    """Default requested workflow: choose and retain the highest observed test F1."""
+    base = build_dev_notebook(template_path)
+    reusable = {c["metadata"]["tags"][0]: c for c in base["cells"] if c["cell_type"] == "code"}
+    cells = []
+
+    def markdown(source):
+        cells.append({"cell_type": "markdown", "metadata": {},
+                      "source": (textwrap.dedent(source).strip() + "\n").splitlines(keepends=True)})
+
+    def code(source, tag):
+        cells.append({"cell_type": "code", "metadata": {"tags": [tag]}, "execution_count": None, "outputs": [],
+                      "source": (textwrap.dedent(source).strip() + "\n").splitlines(keepends=True)})
+
+    def reuse(tag, replacements=()):
+        source = "".join(reusable[tag]["source"])
+        for before, after in replacements:
+            if before not in source:
+                raise ValueError(f"Shared cell changed: {tag}/{before}")
+            source = source.replace(before, after)
+        code(source, tag)
+
+    markdown("""
+        # ViNLI · single-model architecture test-peak search · BF16 · seed 42
+
+        **Run All trains four models:** M3_FULL, ARCH_ALIGN256, ARCH_REL256,
+        ARCH_CONDPOOL128. One CafeBERT encoder and classifier per run, EMA/MSD,
+        BF16 training, FP32 dev/test evaluation, max length **512**, batch 4 × 4.
+        Dev and test are evaluated every **30 optimizer steps** after EMA is active
+        (first eligible interval: step 120 with EMA starting at 100), plus the last step.
+        **Patience=0 disables dev early stopping; run the full seven-epoch budget.**
+
+        Every strictly higher test Macro-F1 overwrites `best_test_model.pt` and
+        `test_predictions_peak.csv`. Exact ties retain the earliest checkpoint.
+        `test_curve.csv` records all scans. HF stores the verified peak at
+        `stage2_checkpoint/exploratory_best_test_model.pt`, its predictions and curve.
+        The summary ranks architectures by peak test F1, independently of dev gates.
+        `best_model.pt` and dev-selected metrics remain reference evidence.
+
+        These scores are **test-aware exploratory peaks**, selected on the test
+        set itself; they are not an independent held-out test estimate. Keep this
+        selection protocol explicit when reporting results. No ensemble is used.
+
+        Add `HF_TOKEN` with model-repo write access to Colab Secrets. Private GitHub
+        checkout also needs `GITHUB_TOKEN` with Contents: read. Select a BF16-capable
+        GPU. The new RUN_GROUP prevents mixing evidence with the previous dev-only
+        notebook. Source SHA, model/data hashes and runtime versions are frozen.
+        Later capacity/robustness cells define launchers and do not train on Run All.
+    """)
+    reuse("configuration", [
+        ('vinli-architecture-bf16-seed42-2026-10-03', 'vinli-arch-testpeak30-bf16-2026-10-03'),
+        ('EXPECTED_SPLIT_SIZES = {"train": 18282, "dev": 2255}', 'EXPECTED_SPLIT_SIZES = {"train": 18282, "dev": 2255, "test": 2264}'),
+        ('TEST_PEAK_EXPLORATORY = False', 'TEST_PEAK_EXPLORATORY = True'),
+        ('patience=50', 'patience=0'),
+        ('not WANDB_ENABLED and not TEST_PEAK_EXPLORATORY and not FROZEN_FINAL', 'not WANDB_ENABLED and TEST_PEAK_EXPLORATORY and not FROZEN_FINAL'),
+        ('screening jobs; test locked', 'test-aware exploratory jobs; peak test selection'),
+    ])
+    markdown("""
+        ## Authenticate and freeze the checkout
+        Use Colab Secrets for credentials. Resume uses the original source SHA and
+        refuses changed configuration. Select a new RUN_GROUP for a different study.
+    """)
+    for tag in ("github-auth", "bootstrap", "installation", "gpu-preflight", "secrets"):
+        reuse(tag)
+    reuse("tracking-preflight", [('"test_peak_exploratory": False', '"test_peak_exploratory": True')])
+    markdown("""
+        ## Bind pinned train/dev/test data
+        Test access is explicitly enabled for this exploratory study. The preparation
+        flag below includes test fingerprints; training remains exploratory rather
+        than frozen-final. CafeBERT and all dataset revisions remain pinned.
+    """)
+    code("""
+        from gated_dual_ema_msd.operations.architecture_search import environment_contract
+        DATA_FINGERPRINTS = prepare_data(REPO_DIR, DATASETS, frozen_final=True)
+        if DATA_FINGERPRINTS["vinli"]["revision"] != PINNED_VINLI_REVISION:
+            raise ValueError("ViNLI differs from its pinned revision")
+        SESSION_ENVIRONMENT = environment_metadata()
+        ENVIRONMENT_CONTRACT = environment_contract(SESSION_ENVIRONMENT)
+        BATCH_MANIFEST = {"git_sha": SOURCE_SHA, "model_name": MODEL_NAME, "model_revision": MODEL_REVISION,
+                          "precision": "bf16", "evaluation_precision": "fp32", "test_locked": False,
+                          "environment_contract": ENVIRONMENT_CONTRACT, "label_order": ["E", "C", "N"],
+                          "seeds": SEEDS, "datasets": DATASETS, "methods": METHODS,
+                          "jobs": [dict(dataset=j.dataset, experiment_id=j.experiment_id, seed=j.seed) for j in JOBS],
+                          "config": CONFIG, "data_fingerprints": DATA_FINGERPRINTS,
+                          "protocol": "vinli_architecture_test_peak_exploratory",
+                          "prior_test_exposure": True, "selection_policy": "exploratory_test_macro_f1",
+                          "dev_role": "reference only; no dev gate or early stopping",
+                          "test_peak_rule": {"weight_source": "ema", "metric": "macro_f1", "ties": "earliest_step"}}
+        SIGNATURE = bind_manifest(OUTPUT_ROOT, BATCH_MANIFEST)
+        write_json(OUTPUT_ROOT / "session_environment.json", SESSION_ENVIRONMENT)
+        print("Manifest:", SIGNATURE)
+        print("Split counts:", {s: x["row_count"] for s, x in DATA_FINGERPRINTS["vinli"]["splits"].items()})
+    """, "data-preparation")
+    markdown("""
+        ## Head preflight and four training runs
+        Preflight checks train/dev/test counts, max length, precision, EMA/MSD and
+        actual head parameters. Every child receives `--test_peak_exploratory --no_wandb`.
+        Interrupting the training cell stops its supervised child. Local weights are
+        cleaned only after immutable HF read-back verification of both checkpoints.
+    """)
+    reuse("parameter-preflight")
+    reuse("training")
+    markdown("""
+        ## Highest observed test checkpoint per architecture
+        The table below uses peak-test metrics and checkpoint paths. It does not
+        substitute the final test score of the dev-selected checkpoint. All four
+        verified pilot runs are required before choosing the seed-42 winner.
+    """)
+    code("""
+        from gated_dual_ema_msd.operations.architecture_test_peak import test_peak_table, select_peak_candidate
+        TEST_PEAK_TABLE = test_peak_table(OUTPUT_ROOT)
+        display(TEST_PEAK_TABLE)
+        TEST_PEAK_TABLE.to_csv(OUTPUT_ROOT / "exploratory_architecture_test_peaks.csv", index=False)
+        try:
+            SELECTED_CANDIDATE = select_peak_candidate(OUTPUT_ROOT)
+        except ValueError as error:
+            SELECTED_CANDIDATE = None
+            print("Pilot selection pending:", error)
+        else:
+            print("TEST-AWARE EXPLORATORY winner:", SELECTED_CANDIDATE)
+        print("Verified peak weights, predictions and curves:", OUTPUT_ROOT)
+    """, "summary")
+    markdown("""
+        ## Optional capacity control
+        Invoke `launch_capacity_control(authorize=True)` explicitly after inspecting
+        the peak results. It runs one seed-42 parameter control for the selected new
+        architecture. If M3 wins, there is no additional architecture control.
+    """)
+    code("""
+        import copy
+        from gated_dual_ema_msd.operations.architecture_test_peak import peak_capacity_control_jobs, select_peak_candidate
+        from gated_dual_ema_msd.operations.architecture_search import environment_contract
+
+        def launch_capacity_control(*, authorize=False):
+            if authorize is not True:
+                raise ValueError("Invoke with authorize=True after reviewing test-aware pilot evidence")
+            if environment_contract(environment_metadata()) != BATCH_MANIFEST["environment_contract"]:
+                raise ValueError("Current runtime differs from the frozen study")
+            selected = select_peak_candidate(OUTPUT_ROOT)
+            jobs = peak_capacity_control_jobs(OUTPUT_ROOT)
+            if not jobs:
+                print("M3 control is the winner; no new architecture capacity control")
+                return None
+            group = RUN_GROUP + "-capacity"
+            output_root = OUTPUT_ROOT.parent / group
+            config = {**CONFIG, "hf_prefix": group}
+            manifest = copy.deepcopy(BATCH_MANIFEST)
+            manifest.update(protocol="vinli_architecture_test_peak_capacity", methods=[jobs[0].experiment_id],
+                            seeds=[42], jobs=[dict(dataset=j.dataset, experiment_id=j.experiment_id, seed=j.seed) for j in jobs],
+                            config=config, screening_manifest_sha256=SIGNATURE, selected_candidate=selected)
+            bind_manifest(output_root, manifest)
+            verify_hf_write_access(jobs, config)
+            run_batch(jobs, REPO_DIR, LOCAL_RUN_ROOT.parent / group, output_root, config, manifest)
+            return output_root
+    """, "capacity-control")
+    markdown("""
+        ## Multi-seed test-peak robustness
+        Explicitly invoke `launch_confirmation("<winner>", authorize=True)`.
+        This runs only M3 and the test-peak winner on seeds 2024/3407, with the same
+        full budget and test scanning. If M3 wins, run its two extra seeds only.
+        All seed peaks remain reported; this repetition does not undo test selection.
+    """)
+    code("""
+        import copy
+        from gated_dual_ema_msd.operations.architecture_test_peak import peak_confirmation_jobs
+
+        def launch_confirmation(selected_candidate, *, authorize=False):
+            if authorize is not True:
+                raise ValueError("Invoke with authorize=True after reviewing the test-aware pilot")
+            if environment_contract(environment_metadata()) != BATCH_MANIFEST["environment_contract"]:
+                raise ValueError("Current runtime differs from the frozen study")
+            jobs = peak_confirmation_jobs(OUTPUT_ROOT, selected_candidate)
+            group = RUN_GROUP + "-confirm"
+            output_root = OUTPUT_ROOT.parent / group
+            config = {**CONFIG, "hf_prefix": group}
+            manifest = copy.deepcopy(BATCH_MANIFEST)
+            manifest.update(protocol="vinli_architecture_test_peak_robustness", seeds=[2024, 3407],
+                            methods=list(dict.fromkeys(j.experiment_id for j in jobs)), config=config,
+                            jobs=[dict(dataset=j.dataset, experiment_id=j.experiment_id, seed=j.seed) for j in jobs],
+                            screening_manifest_sha256=SIGNATURE, selected_candidate=selected_candidate)
+            bind_manifest(output_root, manifest)
+            verify_hf_write_access(jobs, config)
+            run_batch(jobs, REPO_DIR, LOCAL_RUN_ROOT.parent / group, output_root, config, manifest)
+            return output_root
+    """, "confirmation")
+    markdown("""
+        ## Report existing peaks without more inference
+        After the extra seeds finish, invoke `show_robustness("<winner>")` to export
+        all seed peaks and their mean/std. It only reads verified artifacts; it
+        performs no additional test inference or checkpoint ensemble.
+    """)
+    code("""
+        from gated_dual_ema_msd.operations.architecture_test_peak import peak_robustness_summary
+
+        def show_robustness(candidate):
+            root = OUTPUT_ROOT.parent / (RUN_GROUP + "-confirm")
+            runs, summary = peak_robustness_summary(OUTPUT_ROOT, root, candidate)
+            runs.to_csv(root / "exploratory_architecture_peak_runs.csv", index=False)
+            summary.to_csv(root / "exploratory_architecture_peak_summary.csv", index=False)
+            display(runs)
+            display(summary)
+            return runs, summary
+    """, "robustness-summary")
+    for index, cell in enumerate(cells):
+        cell["id"] = f"arch-peak-{index:02d}"
+    return {**base, "cells": cells}
 
 
 def main() -> None:

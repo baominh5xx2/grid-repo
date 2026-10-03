@@ -1,5 +1,11 @@
 # ViNLI Single-Model Architecture Search Implementation Plan
 
+> **Protocol superseded by the user's subsequent instruction:** the default
+> notebook now scans test every 30 eligible optimizer steps, disables dev early
+> stopping (patience 0), and selects the test-aware exploratory peak. Dev-only
+> gates below describe the original plan, retained as historical documentation.
+> See `docs/vinli_architecture_notebook.md` for the current executable workflow.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking. The user subsequently approved updating source/notebook and pushing GitHub; GPU execution is deferred to the user's Colab run.
 
 **Goal:** Improve ViNLI Macro-F1 with one CafeBERT model by testing how its head preserves and combines sentence-level and token-level comparison evidence.

@@ -34,7 +34,7 @@ class ArchitectureNotebookTests(unittest.TestCase):
     def notebook(self):
         self.assertTrue(GENERATOR.is_file(), "Architecture notebook generator is missing")
         namespace = runpy.run_path(str(GENERATOR), run_name="notebook_generator_test")
-        return namespace["build_notebook"]()
+        return namespace["build_dev_notebook"]()
 
     def cells(self):
         return {cell["metadata"]["tags"][0]: "".join(cell["source"])
@@ -90,7 +90,8 @@ class ArchitectureNotebookTests(unittest.TestCase):
 
     def test_saved_notebook_matches_generator(self):
         saved = json.loads((ROOT / "notebooks/vinli_architecture_bf16_seed42.ipynb").read_text(encoding="utf-8"))
-        self.assertEqual(saved, self.notebook(), "Regenerate the architecture notebook after editing its builder")
+        builder = runpy.run_path(str(GENERATOR), run_name="notebook_generator_test")
+        self.assertEqual(saved, builder["build_notebook"](), "Regenerate the architecture notebook after editing its builder")
 
     def test_data_binding_requests_train_dev_only(self):
         namespace = self.config()

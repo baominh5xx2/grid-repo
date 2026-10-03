@@ -599,6 +599,9 @@ class DirectTrainer:
         peak_test_path = self.output_dir / "best_test_model.pt"
         peak_test_metrics = None
         peak_test_step = None
+        peak_test_epoch = None
+        peak_test_source = None
+        peak_test_dev_metrics = None
         test_curve = []
         test_evaluations = 0
         log_file = self.output_dir / "train.log"
@@ -761,6 +764,8 @@ class DirectTrainer:
                     status = "NEW DEV BEST"
                 else:
                     status = f"no-imp ({dev_selection.no_improve}/{self.patience})"
+                if self.patience <= 0:
+                    status = "DEV REFERENCE; early stopping disabled"
 
                 if self.test_peak_exploratory:
                     test_evaluation_started = time.perf_counter()
@@ -770,19 +775,35 @@ class DirectTrainer:
                             self.max_length, self.physical_batch_size * 2,
                         )
                         test_evaluations += 1
-                        if peak_test_metrics is None or scan_metrics["macro_f1"] > peak_test_metrics["macro_f1"]:
+                        if any(not math.isfinite(scan_metrics[k]) or not 0 <= scan_metrics[k] <= 1
+                               for k in ("macro_f1", "accuracy")):
+                            raise RuntimeError("Invalid exploratory test metric; refusing peak checkpoint")
+                        is_test_peak = peak_test_metrics is None or scan_metrics["macro_f1"] > peak_test_metrics["macro_f1"]
+                        if is_test_peak:
                             peak_test_metrics = dict(scan_metrics)
                             peak_test_step = optimizer_step
+                            peak_test_epoch = epoch
+                            peak_test_source = selected_source
+                            peak_test_dev_metrics = dict(selected_metrics)
                             torch.save(self.model.state_dict(), peak_test_path)
                             scan_frame.to_csv(self.output_dir / "test_predictions_peak.csv", index=False)
+                            (self.output_dir / "test_peak.json").write_text(json.dumps({
+                                "optimizer_step": optimizer_step, "epoch": epoch, "weight_source": selected_source,
+                                "metrics": peak_test_metrics, "dev_metrics_at_peak": peak_test_dev_metrics,
+                                "selection_policy": "exploratory_test_macro_f1", "ties": "earliest_step",
+                                "checkpoint": "best_test_model.pt", "predictions": "test_predictions_peak.csv",
+                            }, indent=2), encoding="utf-8")
                     test_curve.append({"optimizer_step": optimizer_step, "epoch": epoch,
                                        "weight_source": selected_source, "test_macro_f1": scan_metrics["macro_f1"],
-                                       "test_accuracy": scan_metrics["accuracy"], "dev_macro_f1": selected_metrics["macro_f1"]})
+                                       "test_accuracy": scan_metrics["accuracy"],
+                                       **{f"test_f1_{label}": scan_metrics[f"f1_{label}"] for label in LABELS},
+                                       "dev_macro_f1": selected_metrics["macro_f1"], "is_test_peak": is_test_peak,
+                                       "peak_test_macro_f1": peak_test_metrics["macro_f1"], "peak_test_step": peak_test_step})
                     pd.DataFrame(test_curve).to_csv(self.output_dir / "test_curve.csv", index=False)
                     wandb_tracker.log_step({"exploratory/test_macro_f1": scan_metrics["macro_f1"],
                                             "exploratory/peak_test_macro_f1": peak_test_metrics["macro_f1"],
                                             "exploratory/peak_test_step": peak_test_step}, step=optimizer_step)
-                    print(f"[{run_name}] EXPLORATORY TEST step={optimizer_step} f1={scan_metrics['macro_f1']:.4f} peak={peak_test_metrics['macro_f1']:.4f} at step={peak_test_step}", flush=True)
+                    print(f"[{run_name}] EXPLORATORY TEST step={optimizer_step} f1={scan_metrics['macro_f1']:.6f} peak={peak_test_metrics['macro_f1']:.6f} at step={peak_test_step}", flush=True)
                     evaluation_seconds += time.perf_counter() - test_evaluation_started
 
                 log_line = (
@@ -895,6 +916,9 @@ class DirectTrainer:
             "test_ema": test_selected if dev_selection.weight_source == "ema" else None,
             "peak_test_macro_f1": peak_test_metrics["macro_f1"] if peak_test_metrics else None,
             "peak_test_step": peak_test_step,
+            "peak_test_epoch": peak_test_epoch,
+            "peak_test_weight_source": peak_test_source,
+            "peak_test_dev_metrics": peak_test_dev_metrics,
             "peak_test_checkpoint": str(peak_test_path) if peak_test_metrics else None,
             "peak_test_metrics": peak_test_metrics,
             "test_peak_exploratory": self.test_peak_exploratory,
@@ -975,6 +999,8 @@ class DirectTrainer:
         test_text = (
             f" test_f1={test_selected['macro_f1']:.4f}" if test_selected else " test=LOCKED"
         )
+        if peak_test_metrics is not None:
+            test_text += f" exploratory_peak_test_f1={peak_test_metrics['macro_f1']:.6f} peak_step={peak_test_step}"
         print(
             f"[{run_name}] FINISHED dev_f1={final_dev_selected['macro_f1']:.4f}{test_text}",
             flush=True,

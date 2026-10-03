@@ -52,7 +52,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--ema_start_step", type=int, default=EMA_START_STEP)
     parser.add_argument("--output_dir", default="outputs/ablation_matrix")
     parser.add_argument("--test_peak_exploratory", action="store_true",
-                        help="Explicit test-aware exploration: scan test at dev eval steps and save its peak separately; not paper evaluation")
+                        help="Explicit test-aware exploration: scan test at dev eval steps and save its peak separately; report as a test-selected exploratory peak")
     parser.add_argument(
         "--frozen_final",
         action="store_true",
