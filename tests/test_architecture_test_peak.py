@@ -14,6 +14,33 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
 class ArchitectureTestPeakTests(unittest.TestCase):
+    def test_relation_width_pair_keeps_dev_selected_and_peak_endpoints_separate(self):
+        from gated_dual_ema_msd.operations.relation_width_pilot import relation_width_table
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp); self.prepare(root, perfect_method='ARCH_REL256')
+            for method, f1, accuracy in [('M3_FULL', .55, .60), ('ARCH_REL256', .56, .61)]:
+                marker = root/'vinli'/method/'seed42/verified_run.json'
+                result = json.loads(marker.read_text())
+                result.update(test={'macro_f1': f1, 'accuracy': accuracy},
+                              hf_checkpoint_path='stage2_checkpoint/pytorch_model.bin')
+                marker.write_text(json.dumps(result))
+            table = relation_width_table(root).set_index('experiment_id')
+            self.assertEqual(set(table.index), {'M3_FULL', 'ARCH_REL256'})
+            self.assertAlmostEqual(table.loc['ARCH_REL256', 'dev_selected_test_macro_f1_delta_pp'], 1.0)
+            self.assertAlmostEqual(table.loc['ARCH_REL256', 'exploratory_peak_test_macro_f1_delta_pp'], 100*(1-5/9))
+            self.assertLess(table.loc['ARCH_REL256', 'dev_macro_f1_delta_pp'], 0)
+            self.assertEqual(table.loc['ARCH_REL256', 'exploratory_peak_test_accuracy'], 1.0)
+            self.assertEqual(table.loc['ARCH_REL256', 'dev_selected_test_accuracy'], .61)
+            # Missing results do not produce a premature relative decision.
+            marker = root/'vinli/ARCH_REL256/seed42/verified_run.json'
+            marker.unlink()
+            partial = relation_width_table(root)
+            self.assertEqual(len(partial), 1)
+            self.assertNotIn('dev_selected_test_macro_f1_delta_pp', partial)
+            (root/'vinli/M3_FULL/seed42/test_predictions_peak.csv').write_text('tampered')
+            with self.assertRaisesRegex(ValueError, 'hash'):
+                relation_width_table(root)
+
     def prepare(self, root, perfect_method='ARCH_ALIGN256'):
         from gated_dual_ema_msd.operations.notebook_batch import manifest_digest
         from gated_dual_ema_msd.operations.architecture_search import SCREENING_METHODS

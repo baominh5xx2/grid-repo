@@ -50,7 +50,20 @@ This command selects checkpoints on dev and keeps test locked. Increase
 Use a fresh output directory when comparing with previous FP16 runs; completed
 results in an existing directory are skipped unless `--rerun` is supplied.
 
-## ViNLI M3-only notebook (current)
+## ViNLI M3 / REL256 parallel pilot (current)
+
+Open [vinli_m3_rel256_bf16_g4_parallel_seed42.ipynb in Colab](https://colab.research.google.com/github/baominh5xx2/grid-repo/blob/main/notebooks/vinli_m3_rel256_bf16_g4_parallel_seed42.ipynb).
+Run All trains **M3_FULL and ARCH_REL256, seed 42**, in **two independent processes
+on CUDA:0**, intended for the 96 GB G4. Only relation width changes 128 → 256.
+It preserves max length 512, BF16/FP32, batch 4 × accumulation 4, EMA/MSD,
+seven epochs, evaluation every 30 steps and patience 0. Both dev-selected test
+scores and exploratory test peaks appear separately, with verified HF references.
+The runner accepts 1–3 workers and checks free VRAM using an estimated per-job
+budget; this two-job pilot remains capped at two. Logs/checkpoints stay separate,
+HF publication is serialized, and interrupting the cell stops all active workers.
+See [the pilot guide](docs/vinli_relation_width_pilot.md) for scheduling and resume.
+
+## ViNLI M3-only multi-seed notebook
 
 Open [vinli_m3_bf16_multiseed.ipynb in Colab](https://colab.research.google.com/github/baominh5xx2/grid-repo/blob/main/notebooks/vinli_m3_bf16_multiseed.ipynb).
 Run All runs **only M3_FULL on ViNLI**, seeds **42 / 2024 / 3407** sequentially.
